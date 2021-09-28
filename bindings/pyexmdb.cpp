@@ -23,7 +23,7 @@ PYBIND11_MODULE(pyexmdb, m)
 {
 	m.doc() = "libexmdbpp Python bindings";
 
-	py::class_<ExmdbQueries>(m, "ExmdbQueries", "Main exmdb client interface", py::is_final())
+	py::class_<ExmdbQueries>(m, "ExmdbQueries", "Main exmdb client interface")
 	    .def(py::init<const std::string&, const std::string&, const std::string&, bool>(),
 	         py::arg("host"), py::arg("port"), py::arg("homedir"), py::arg("isPrivate"))
 	    .def("addFolderOwner", &ExmdbQueries::addFolderOwner,
