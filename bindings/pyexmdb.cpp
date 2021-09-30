@@ -9,8 +9,23 @@ using namespace exmdbpp::requests;
 using namespace exmdbpp::queries;
 using namespace exmdbpp::structures;
 
+
+template<typename T, size_t N>
+constexpr inline size_t arrsize(T(&)[N])
+{return N;}
+
+static std::string hexstr(uint32_t value, uint8_t width)
+{
+	static const char* chars = "0123456789abcdef";
+	std::string res("0x");
+	res.resize(width+2);
+	for(int64_t nibble = width; nibble >= 0; --nibble)
+		res += chars[(value&(0xF<<nibble))>>nibble];
+	return res;
+}
+
 std::string TaggedPropval_repr(const TaggedPropval& tp)
-{return "TaggedPropval("+std::to_string(tp.tag)+", "+tp.toString()+")";}
+{return "TaggedPropval("+hexstr(tp.tag, 8)+", "+tp.toString()+")";}
 
 std::string Folder_repr(const Folder& f)
 {return "<Folder '"+f.displayName+"'>";}
@@ -30,7 +45,7 @@ PYBIND11_MODULE(pyexmdb, m)
 	         py::arg("homedir"), py::arg("folderId"), py::arg("username"))
 	    .def("createFolder", &ExmdbQueries::createFolder,
 	         py::arg("homedir"), py::arg("domainId"), py::arg("folderName"), py::arg("container"), py::arg("comment"))
-	    .def("deleteFolders", &ExmdbQueries::deleteFolder,
+	    .def("deleteFolder", &ExmdbQueries::deleteFolder,
 	        py::arg("homedir"), py::arg("folderId"))
 	    .def("deleteFolderOwner", &ExmdbQueries::deleteFolderOwner,
 	         py::arg("homedir"), py::arg("folderId"), py::arg("memberId"))
@@ -40,6 +55,8 @@ PYBIND11_MODULE(pyexmdb, m)
 	         py::arg("homedir"), py::arg("properties") = ExmdbQueries::defaultFolderProps)
 	    .def("getFolderOwnerList", &ExmdbQueries::getFolderOwnerList,
 	         py::arg("homedir"), py::arg("folderId"))
+	    .def("getFolderProperties", &ExmdbQueries::getFolderProperties,
+	         py::arg("homedir"), py::arg("cpid"), py::arg("folderId"), py::arg("proptags") = ExmdbQueries::defaultFolderProps)
 	    .def("getStoreProperties", &ExmdbQueries::getStoreProperties,
 	         py::arg("homedir"), py::arg("cpid"), py::arg("proptags"))
 	    .def("getSyncData", &ExmdbQueries::getSyncData,
@@ -56,6 +73,8 @@ PYBIND11_MODULE(pyexmdb, m)
 	         py::arg("homedir"));
 
 	py::class_<Folder>(m, "Folder")
+	        .def(py::init())
+	        .def(py::init<ExmdbQueries::PropvalList>(), py::arg("propvalList"))
 	        .def_readwrite("folderId", &Folder::folderId)
 	        .def_readwrite("displayName", &Folder::displayName)
 	        .def_readwrite("comment", &Folder::comment)
@@ -71,6 +90,11 @@ PYBIND11_MODULE(pyexmdb, m)
 	py::class_<FolderOwnerList>(m, "FolderOwnerList")
 	        .def(py::init<const ExmdbQueries::PropvalTable&>())
 	        .def_readonly("owners", &FolderOwnerList::owners);
+
+	py::class_<FolderOwnerList::Owner>(m, "FolderOwner")
+	        .def_readonly("memberId", &FolderOwnerList::Owner::memberId)
+	        .def_readonly("memberName", &FolderOwnerList::Owner::memberName)
+	        .def_readonly("memberRights", &FolderOwnerList::Owner::memberRights);
 
 	py::class_<PropertyProblem>(m, "PropertyProblem")
 	        .def_readwrite("err", &PropertyProblem::err)
@@ -100,4 +124,6 @@ PYBIND11_MODULE(pyexmdb, m)
 	        .def_readwrite("u32", &TaggedPropval::Value::u32)
 	        .def_readwrite("u64", &TaggedPropval::Value::f)
 	        .def_readwrite("d", &TaggedPropval::Value::d);
+
+	py::register_exception<exmdbpp::ExmdbError>(m, "ExmdbError", PyExc_RuntimeError);
 }

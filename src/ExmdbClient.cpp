@@ -115,7 +115,7 @@ void ExmdbClient::Connection::send(IOBuffer& buff)
 		throw std::runtime_error("Receive failed: "+std::string(strerror(errno)));
 	uint8_t status = buff.pop<uint8_t>();
 	if(status != ResponseCode::SUCCESS)
-		throw ExmdbError("Server returned non-zero response code ", status);
+		throw ExmdbError("Server returned non-zero response code "+std::to_string(status), status);
 	if(bytes < 5)
 		throw std::runtime_error("Connection closed unexpectedly");
 	uint32_t length = buff.pop<uint32_t>();
