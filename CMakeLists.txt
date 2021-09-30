@@ -14,6 +14,7 @@ add_library(exmdbpp SHARED
             src/requests.cpp
             src/structures.cpp
             src/util.cpp)
+set_target_properties(exmdbpp PROPERTIES SOVERSION 0)
 target_include_directories(exmdbpp PUBLIC include/exmdbpp)
 install(TARGETS exmdbpp LIBRARY)
 
