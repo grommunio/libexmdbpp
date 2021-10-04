@@ -2,6 +2,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  * SPDX-FileCopyrightText: 2020 grommunio GmbH
  */
+
+#include <algorithm>
+
 #include "queries.h"
 #include "util.h"
 #include "constants.h"
@@ -11,11 +14,14 @@ using namespace exmdbpp::constants;
 using namespace exmdbpp::requests;
 using namespace exmdbpp::structures;
 
+
 namespace exmdbpp::queries
 {
 
 const std::vector<uint32_t> ExmdbQueries::defaultFolderProps =
 {PropTag::FOLDERID, PropTag::DISPLAYNAME, PropTag::COMMENT, PropTag::CREATIONTIME, PropTag::CONTAINERCLASS};
+
+const uint32_t ExmdbQueries::ownerRights = 0x000007e3;
 
 /**
  * @brief      Load propvals into predefined fields
@@ -80,38 +86,38 @@ FolderList::FolderList(const std::vector<std::vector<structures::TaggedPropval>>
 }
 
 /**
- * @brief      Interpret query table response as folder owner list
+ * @brief      Interpret query table response as folder member list
  *
  * @param      table     Table to convert
  */
-FolderOwnerList::FolderOwnerList(const std::vector<std::vector<structures::TaggedPropval>>& table)
+FolderMemberList::FolderMemberList(const std::vector<std::vector<structures::TaggedPropval>>& table)
 {
-	owners.reserve(table.size());
+	members.reserve(table.size());
 	for(auto& entry : table)
 	{
-		Owner owner;
+		Member member;
 		for(const TaggedPropval& tp : entry)
 		{
 			switch(tp.tag)
 			{
 			case PropTag::MEMBERID:
-				owner.memberId = tp.value.u64; break;
+				member.id = tp.value.u64; break;
 			case PropTag::MEMBERNAME:
-				owner.memberName = tp.value.str; break;
+				member.name = tp.value.str; break;
 			case PropTag::MEMBERRIGHTS:
-				owner.memberRights= tp.value.u32; break;
+				member.rights= tp.value.u32; break;
 			}
 		}
-		owners.emplace_back(std::move(owner));
+		members.emplace_back(std::move(member));
 	}
 }
 
 /**
- * @brief      Interpret query table response as folder owner list
+ * @brief      Interpret query table response as folder member list
  *
  * @param      response  Response to convert
  */
-FolderOwnerList::FolderOwnerList(const Response_t<QueryTableRequest>& response) : FolderOwnerList(response.entries)
+FolderMemberList::FolderMemberList(const Response_t<QueryTableRequest>& response) : FolderMemberList(response.entries)
 {}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -177,7 +183,7 @@ uint64_t ExmdbQueries::createFolder(const std::string& homedir, uint32_t domainI
 }
 
 /**
- * @brief      Delete public folder
+ * @brief      Delete folder
  *
  * @param      homedir   Home directory path of the domain
  * @param      folderId  Id of the folder to delete
@@ -188,14 +194,14 @@ bool ExmdbQueries::deleteFolder(const std::string& homedir, uint64_t folderId)
 {return send<DeleteFolderRequest>(homedir, 0, folderId, true).success;}
 
 /**
- * @brief      Get list of public folder list owners
+ * @brief      Get list of folder members
  *
  * @param      homedir   Home directory path of the domain
  * @param      folderId  ID of the folder
  *
- * @return     Table containing the owner information. Can be converted to FolderOwnerList for easier access.
+ * @return     Table containing the member information. Can be converted to FolderMemberList for easier access.
  */
-ExmdbQueries::PropvalTable ExmdbQueries::getFolderOwnerList(const std::string& homedir, uint64_t folderId)
+ExmdbQueries::PropvalTable ExmdbQueries::getFolderMemberList(const std::string& homedir, uint64_t folderId)
 {
 	auto lptResponse = send<LoadPermissionTableRequest>(homedir, folderId, 0);
 	uint32_t proptags[] = {PropTag::MEMBERID, PropTag::MEMBERNAME, PropTag::MEMBERRIGHTS};
@@ -205,31 +211,31 @@ ExmdbQueries::PropvalTable ExmdbQueries::getFolderOwnerList(const std::string& h
 }
 
 /**
- * @brief      Add user to public folder owner list
+ * @brief      Add user to folder member list
  *
  * @param      homedir   Home directory path of the domain
  * @param      folderId  ID of the folder
  * @param      username  Username to add to list
+ * @param      rights    Bitmask of member rights
+ * @param      add       Whether to add a member or modify an existing one
  */
-void ExmdbQueries::addFolderOwner(const std::string& homedir, uint64_t folderId, const std::string& username)
+void ExmdbQueries::setFolderMember(const std::string& homedir, uint64_t folderId, const std::string& username,
+                                  uint32_t rights, bool add)
 {
-	uint32_t memberRights = Permission::READANY | Permission::CREATE | Permission::EDITANY | Permission::DELETEANY |
-	                        Permission::CREATESUBFOLDER | Permission::FOLDEROWNER | Permission::FOLDERCONTACT |
-	                        Permission::FOLDERVISIBLE;
 	std::vector<TaggedPropval> propvals = {TaggedPropval(PropTag::SMTPADDRESS, username, false),
-	                                       TaggedPropval(PropTag::MEMBERRIGHTS, memberRights)};
-	PermissionData permissions[] = {PermissionData(PermissionData::ADD_ROW, propvals)};
+	                                       TaggedPropval(PropTag::MEMBERRIGHTS, rights)};
+	PermissionData permissions[] = {PermissionData(add? PermissionData::ADD_ROW : PermissionData::MODIFY_ROW, propvals)};
 	send<UpdateFolderPermissionRequest>(homedir, folderId, false, permissions);
 }
 
 /**
- * @brief      Remove member from owner list
+ * @brief      Remove member from member list
  *
  * @param      homedir   Home directory path of the domain
  * @param      folderId  ID of the folder
  * @param      memberId  ID of the member to remove
  */
-void ExmdbQueries::deleteFolderOwner(const std::string& homedir, uint64_t folderId, uint64_t memberId)
+void ExmdbQueries::deleteFolderMember(const std::string& homedir, uint64_t folderId, uint64_t memberId)
 {
 	std::vector<TaggedPropval> propvals = {TaggedPropval(PropTag::MEMBERID, memberId)};
 	PermissionData permissions[] = {PermissionData(PermissionData::REMOVE_ROW, propvals)};
@@ -250,7 +256,7 @@ ExmdbQueries::ProblemList ExmdbQueries::setStoreProperties(const std::string& ho
 {return send<SetStorePropertiesRequest>(homedir, cpid, propvals).problems;}
 
 /**
- * @brief      Remove member from owner list
+ * @brief      Remove member from member list
  *
  * @param      homedir   Home directory path of the user
  */

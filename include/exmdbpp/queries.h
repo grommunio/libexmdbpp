@@ -55,19 +55,19 @@ struct FolderList
  * Utility class providing a more structured access to data returned by
  * ExmdbQueries::getPublicFolderOwnerList.
  */
-struct FolderOwnerList
+struct FolderMemberList
 {
-	struct Owner
+	struct Member
 	{
-		uint64_t memberId = 0;
-		std::string memberName;
-		uint32_t memberRights = 0;
+		uint64_t id = 0;
+		std::string name;
+		uint32_t rights = 0;
 	};
 
-	FolderOwnerList(const requests::Response_t<requests::QueryTableRequest>&);
-	FolderOwnerList(const std::vector<std::vector<structures::TaggedPropval>>&);
+	FolderMemberList(const requests::Response_t<requests::QueryTableRequest>&);
+	FolderMemberList(const std::vector<std::vector<structures::TaggedPropval>>&);
 
-	std::vector<Owner> owners;
+	std::vector<Member> members;
 };
 
 /**
@@ -88,20 +88,21 @@ public:
 
 	using ExmdbClient::ExmdbClient;
 
-	static const std::vector<uint32_t> defaultFolderProps;
+	static const std::vector<uint32_t> defaultFolderProps; ///< Default properties when querying folders
+	static const uint32_t ownerRights; ///< Default rights for folder owners
 
-	void addFolderOwner(const std::string&, uint64_t, const std::string&);
 	uint64_t createFolder(const std::string&, uint32_t, const std::string&, const std::string&, const std::string&);
 	bool deleteFolder(const std::string&, uint64_t);
-	void deleteFolderOwner(const std::string&, uint64_t, uint64_t);
+	void deleteFolderMember(const std::string&, uint64_t, uint64_t);
 	ProptagList getAllStoreProperties(const std::string&);
 	PropvalTable getFolderList(const std::string&, const std::vector<uint32_t>& = defaultFolderProps);
-	PropvalTable getFolderOwnerList(const std::string&, uint64_t);
+	PropvalTable getFolderMemberList(const std::string&, uint64_t);
 	PropvalList getFolderProperties(const std::string&, uint32_t, uint64_t, const std::vector<uint32_t>& = defaultFolderProps);
 	void resyncDevice(const std::string&, const std::string&, const std::string&);
 	SyncData getSyncData(const std::string&, const std::string&);
 	PropvalList getStoreProperties(const std::string&, uint32_t, const std::vector<uint32_t>&);
 	void removeStoreProperties(const std::string&, const std::vector<uint32_t>&);
+	void setFolderMember(const std::string&, uint64_t, const std::string&, uint32_t, bool);
 	ProblemList setFolderProperties(const std::string&, uint32_t, uint64_t, const std::vector<structures::TaggedPropval>&);
 	ProblemList setStoreProperties(const std::string&, uint32_t, const std::vector<structures::TaggedPropval>&);
 	void unloadStore(const std::string&);

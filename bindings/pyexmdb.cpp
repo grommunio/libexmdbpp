@@ -14,15 +14,16 @@ template<typename T, size_t N>
 constexpr inline size_t arrsize(T(&)[N])
 {return N;}
 
-static std::string hexstr(uint32_t value, uint8_t width)
+std::string hexstr(uint32_t value, uint8_t width)
 {
-	static const char* chars = "0123456789abcdef";
+	static const char* chars = "0123456789ABCDEF";
 	std::string res("0x");
 	res.resize(width+2);
-	for(int64_t nibble = width; nibble >= 0; --nibble)
+	for(int64_t nibble = 4*(width-1); nibble >= 0; nibble -= 4)
 		res += chars[(value&(0xF<<nibble))>>nibble];
 	return res;
 }
+
 
 std::string TaggedPropval_repr(const TaggedPropval& tp)
 {return "TaggedPropval("+hexstr(tp.tag, 8)+", "+tp.toString()+")";}
@@ -39,21 +40,23 @@ PYBIND11_MODULE(pyexmdb, m)
 	m.doc() = "libexmdbpp Python bindings";
 
 	py::class_<ExmdbQueries>(m, "ExmdbQueries", "Main exmdb client interface")
+	    .def_readonly_static("defaultFolderProps", &ExmdbQueries::defaultFolderProps)
+	    .def_readonly_static("ownerRights", &ExmdbQueries::ownerRights)
 	    .def(py::init<const std::string&, const std::string&, const std::string&, bool>(),
 	         py::arg("host"), py::arg("port"), py::arg("homedir"), py::arg("isPrivate"))
-	    .def("addFolderOwner", &ExmdbQueries::addFolderOwner,
-	         py::arg("homedir"), py::arg("folderId"), py::arg("username"))
 	    .def("createFolder", &ExmdbQueries::createFolder,
 	         py::arg("homedir"), py::arg("domainId"), py::arg("folderName"), py::arg("container"), py::arg("comment"))
 	    .def("deleteFolder", &ExmdbQueries::deleteFolder,
 	        py::arg("homedir"), py::arg("folderId"))
-	    .def("deleteFolderOwner", &ExmdbQueries::deleteFolderOwner,
+	    .def("deleteFolderMember", &ExmdbQueries::deleteFolderMember,
 	         py::arg("homedir"), py::arg("folderId"), py::arg("memberId"))
 	    .def("getAllStoreProperties", &ExmdbQueries::getAllStoreProperties,
 	         py::arg("homedir"))
 	    .def("getFolderList", &ExmdbQueries::getFolderList,
 	         py::arg("homedir"), py::arg("properties") = ExmdbQueries::defaultFolderProps)
-	    .def("getFolderOwnerList", &ExmdbQueries::getFolderOwnerList,
+	    .def("getFolderMemberList", &ExmdbQueries::getFolderMemberList,
+	         py::arg("homedir"), py::arg("folderId"))
+	    .def("getFolderMemberList", &ExmdbQueries::getFolderMemberList,
 	         py::arg("homedir"), py::arg("folderId"))
 	    .def("getFolderProperties", &ExmdbQueries::getFolderProperties,
 	         py::arg("homedir"), py::arg("cpid"), py::arg("folderId"), py::arg("proptags") = ExmdbQueries::defaultFolderProps)
@@ -65,6 +68,8 @@ PYBIND11_MODULE(pyexmdb, m)
 	         py::arg("homedir"), py::arg("proptags"))
 	    .def("resyncDevice", &ExmdbQueries::resyncDevice,
 	         py::arg("homedir"), py::arg("folderName"), py::arg("deviceId"))
+	    .def("setFolderMember", &ExmdbQueries::setFolderMember,
+	         py::arg("homedir"), py::arg("folderId"), py::arg("username"), py::arg("rights"), py::arg("add"))
 	    .def("setFolderProperties", &ExmdbQueries::setFolderProperties,
 	         py::arg("homedir"), py::arg("cpid"), py::arg("folderId"), py::arg("propvals"))
 	    .def("setStoreProperties", &ExmdbQueries::setStoreProperties,
@@ -87,14 +92,14 @@ PYBIND11_MODULE(pyexmdb, m)
 	        .def_readonly("folders", &FolderList::folders)
 	        .def("__repr__", &FolderList_repr);
 
-	py::class_<FolderOwnerList>(m, "FolderOwnerList")
+	py::class_<FolderMemberList>(m, "FolderMemberList")
 	        .def(py::init<const ExmdbQueries::PropvalTable&>())
-	        .def_readonly("owners", &FolderOwnerList::owners);
+	        .def_readonly("members", &FolderMemberList::members);
 
-	py::class_<FolderOwnerList::Owner>(m, "FolderOwner")
-	        .def_readonly("memberId", &FolderOwnerList::Owner::memberId)
-	        .def_readonly("memberName", &FolderOwnerList::Owner::memberName)
-	        .def_readonly("memberRights", &FolderOwnerList::Owner::memberRights);
+	py::class_<FolderMemberList::Member>(m, "FolderMember")
+	        .def_readonly("id", &FolderMemberList::Member::id)
+	        .def_readonly("name", &FolderMemberList::Member::name)
+	        .def_readonly("rights", &FolderMemberList::Member::rights);
 
 	py::class_<PropertyProblem>(m, "PropertyProblem")
 	        .def_readwrite("err", &PropertyProblem::err)
