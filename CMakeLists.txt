@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(libexmdbpp VERSION 1.1.0)
+project(libexmdbpp VERSION 1.1)
 
 include(GNUInstallDirs)
 

@@ -98,11 +98,11 @@ public:
 	PropvalTable getFolderList(const std::string&, const std::vector<uint32_t>& = defaultFolderProps);
 	PropvalTable getFolderMemberList(const std::string&, uint64_t);
 	PropvalList getFolderProperties(const std::string&, uint32_t, uint64_t, const std::vector<uint32_t>& = defaultFolderProps);
-	void resyncDevice(const std::string&, const std::string&, const std::string&);
 	SyncData getSyncData(const std::string&, const std::string&);
 	PropvalList getStoreProperties(const std::string&, uint32_t, const std::vector<uint32_t>&);
 	void removeStoreProperties(const std::string&, const std::vector<uint32_t>&);
-	void setFolderMember(const std::string&, uint64_t, const std::string&, uint32_t, bool);
+	void resyncDevice(const std::string&, const std::string&, const std::string&);
+	void setFolderMember(const std::string&, uint64_t, const std::string&, uint32_t, uint64_t=0);
 	ProblemList setFolderProperties(const std::string&, uint32_t, uint64_t, const std::vector<structures::TaggedPropval>&);
 	ProblemList setStoreProperties(const std::string&, uint32_t, const std::vector<structures::TaggedPropval>&);
 	void unloadStore(const std::string&);

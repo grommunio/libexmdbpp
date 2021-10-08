@@ -217,14 +217,16 @@ ExmdbQueries::PropvalTable ExmdbQueries::getFolderMemberList(const std::string& 
  * @param      folderId  ID of the folder
  * @param      username  Username to add to list
  * @param      rights    Bitmask of member rights
- * @param      add       Whether to add a member or modify an existing one
+ * @param      ID        ID of an existing member to modify or 0 to create a new one
  */
 void ExmdbQueries::setFolderMember(const std::string& homedir, uint64_t folderId, const std::string& username,
-                                  uint32_t rights, bool add)
+                                  uint32_t rights, uint64_t ID)
 {
 	std::vector<TaggedPropval> propvals = {TaggedPropval(PropTag::SMTPADDRESS, username, false),
 	                                       TaggedPropval(PropTag::MEMBERRIGHTS, rights)};
-	PermissionData permissions[] = {PermissionData(add? PermissionData::ADD_ROW : PermissionData::MODIFY_ROW, propvals)};
+	if(ID)
+		propvals.emplace_back(TaggedPropval(PropTag::MEMBERID, ID));
+	PermissionData permissions[] = {PermissionData(ID? PermissionData::MODIFY_ROW : PermissionData::ADD_ROW, propvals)};
 	send<UpdateFolderPermissionRequest>(homedir, folderId, false, permissions);
 }
 
@@ -336,7 +338,7 @@ void ExmdbQueries::removeStoreProperties(const std::string& homedir, const std::
 ExmdbQueries::SyncData ExmdbQueries::getSyncData(const std::string& homedir, const std::string& folderName)
 {
 	uint64_t parentFolderID = util::makeEidEx(1, PublicFid::ROOT);
-	uint32_t fidTag[] = {PropTag::FOLDERID, PropTag::DISPLAYNAME};
+	uint32_t fidTags[] = {PropTag::FOLDERID, PropTag::DISPLAYNAME};
 	uint32_t bodyTag[] = {PropTag::BODY};
 	uint32_t midTag[] = {PropTag::MID};
 	Restriction ddFilter = Restriction::PROPERTY(Restriction::EQ, 0, TaggedPropval(PropTag::DISPLAYNAME, "devicedata"));
@@ -346,7 +348,7 @@ ExmdbQueries::SyncData ExmdbQueries::getSyncData(const std::string& homedir, con
 	auto folder = send<GetFolderByNameRequest>(homedir, parentFolderID, folderName);
 	auto subfolders = send<LoadHierarchyTableRequest>(homedir, folder.folderId, "", 0);
 	data.reserve(subfolders.rowCount);
-	auto subfolderIDs = send<QueryTableRequest>(homedir, "", 0, subfolders.tableId, fidTag, 0, subfolders.rowCount);
+	auto subfolderIDs = send<QueryTableRequest>(homedir, "", 0, subfolders.tableId, fidTags, 0, subfolders.rowCount);
 	send<UnloadTableRequest>(homedir, subfolders.tableId);
 	for(const auto& subfolder: subfolderIDs.entries)
 	{
