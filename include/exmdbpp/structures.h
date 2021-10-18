@@ -33,8 +33,8 @@ public:
 	TaggedPropval(uint32_t, float);
 	TaggedPropval(uint32_t, double);
 	TaggedPropval(uint32_t, const char*, bool=true);
-	TaggedPropval(uint32_t, const void*, bool=true, size_t=0);
-	TaggedPropval(uint32_t, const IOBuffer&, bool=true);
+	TaggedPropval(uint32_t, const void*, bool=true);
+	TaggedPropval(uint32_t, const void*, uint32_t);
 	TaggedPropval(uint32_t, const std::string&, bool=true);
 
 	TaggedPropval& operator=(const TaggedPropval&);
@@ -63,7 +63,7 @@ private:
 	bool owned = true; ///< Whether the memory stored in pointer values is owned (automatically deallocated in destructor)
 
 	void copyStr(const char*);
-	void copyData(const void*, size_t);
+	void copyData(const void*, uint32_t len, bool=false);
 	void free();
 };
 

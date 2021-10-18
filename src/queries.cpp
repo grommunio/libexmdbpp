@@ -172,11 +172,11 @@ uint64_t ExmdbQueries::createFolder(const std::string& homedir, uint32_t domainI
 	propvals.emplace_back(PropTag::CHANGENUMBER, acResponse.changeNum);
 
 	xid.writeXID(tmpbuff);
-	propvals.emplace_back(PropTag::CHANGEKEY, tmpbuff.data(), false);
+	propvals.emplace_back(PropTag::CHANGEKEY, tmpbuff.data(), uint32_t(tmpbuff.size()));
 
-	size_t offset = tmpbuff.tell();
+	size_t offset = tmpbuff.size();
 	tmpbuff.push(xid);
-	propvals.emplace_back(PropTag::PREDECESSORCHANGELIST, tmpbuff.data()+offset, false);
+	propvals.emplace_back(PropTag::PREDECESSORCHANGELIST, tmpbuff.data()+offset, uint32_t(tmpbuff.size()-offset));
 	if(!container.empty())
 		propvals.emplace_back(PropTag::CONTAINERCLASS, container);
 	return send<CreateFolderByPropertiesRequest>(homedir, 0, propvals).folderId;

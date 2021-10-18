@@ -162,18 +162,23 @@ TaggedPropval::TaggedPropval(uint32_t tag, const char* val, bool copy) : tag(tag
  * @param      tag   Tag identifier
  * @param      val   Tag value
  * @param      copy  Whether to copy data
- * @param      len   Length of the buffer
  */
-TaggedPropval::TaggedPropval(uint32_t tag, const void* val, bool copy, size_t len) : tag(tag), type(tag&0xFFFF), owned(copy)
+TaggedPropval::TaggedPropval(uint32_t tag, const void* val, bool copy) : tag(tag), type(tag&0xFFFF), owned(copy)
 {
 	if(copy)
+	{
+		uint32_t len;
+		memcpy(&len, val, sizeof(uint32_t));
+		len = le32toh(len);
 		copyData(val, len);
+	}
 	else
 		value.ptr = const_cast<void*>(val);
 }
 
+
 /**
- * @brief      Initialize tagged property value (Buffer)
+ * @brief      Initialize tagged property value (binary)
  *
  * No type check is performed to ensure the tag type actually matches a binary type.
  *
@@ -183,17 +188,17 @@ TaggedPropval::TaggedPropval(uint32_t tag, const void* val, bool copy, size_t le
  * If copy is set to true, the data is copied to an internally managed buffer,
  * otherwise only the pointer to the data is stored.
  *
+ * The buffer length is automatically prepended to the data.
+ *
  * @param      tag   Tag identifier
  * @param      val   Tag value
- * @param      copy  Whether to copy data
+ * @param      len   Length of the buffer
  */
-TaggedPropval::TaggedPropval(uint32_t tag, const IOBuffer& val, bool copy) : tag(tag), type(tag&0xFFFF), owned(copy)
+TaggedPropval::TaggedPropval(uint32_t tag, const void* val, uint32_t len) : tag(tag), type(tag&0xFFFF), owned(true)
 {
-	if(copy)
-		copyData(val.data(), val.size());
-	else
-		value.ptr = const_cast<void*>(reinterpret_cast<const void*>(val.data()));
+	copyData(val, len, true);
 }
+
 
 /**
  * @brief      Initialize tagged property value (C++ string)
@@ -397,10 +402,20 @@ void TaggedPropval::copyStr(const char* str)
  * @param      data  Data to copy
  * @param      len   Number of bytes
  */
-void TaggedPropval::copyData(const void* data, size_t len)
+void TaggedPropval::copyData(const void* data, uint32_t len, bool prependLength)
 {
-	value.ptr = new char[len];
-	memcpy(value.ptr, data, len);
+	if(prependLength)
+	{
+		value.a8 = new uint8_t[len+sizeof(uint32_t)];
+		uint32_t lenle =  htole32(len);
+		memcpy(value.a8, &lenle, sizeof(uint32_t));
+		memcpy(value.a8+sizeof(uint32_t), data, len);
+	}
+	else
+	{
+		value.ptr = new char[len];
+		memcpy(value.ptr, data, len);
+	}
 }
 
 /**
