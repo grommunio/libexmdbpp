@@ -13,12 +13,21 @@ namespace exmdbpp::util
 static const uint16_t endianHelper = 0x0100;
 static bool isBigEndian = bool(*reinterpret_cast<const uint8_t*>(&endianHelper)); ///< Determine whether current machine uses big endian
 
-
+/**
+ * @brief      Convert value to GC buffer
+ *
+ * The least significant 48 bit are moved to the first 6 bytes and swapped to
+ * big endian order, if necessary.
+ *
+ * @param      value   Value to convert
+ *
+ * @return     Value with the first 6 bytes arranged as GC buffer
+ */
 uint64_t valueToGc(uint64_t value)
-{return htobe64(value&0x0000FFFFFFFFFFFF) << (isBigEndian? 16 : 0);}
+{return htobe64(value<<16);}
 
 uint64_t makeEid(uint16_t replid, uint64_t gc)
-{return replid | gc;}
+{return replid | (gc << (isBigEndian? 0 : 16));}
 
 uint64_t makeEidEx(uint16_t replid, uint64_t value)
 {return makeEid(replid, valueToGc(value));}

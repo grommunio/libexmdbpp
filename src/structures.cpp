@@ -474,9 +474,8 @@ void SizedXID::writeXID(IOBuffer& buff) const
 {
 	if(size < 17 || size > 24)
 		throw std::runtime_error("Invalid XID size: "+std::to_string(size));
-	uint64_t lId = htole64(localId);
 	buff.push(guid);
-	buff.push_raw(&lId, size-16);
+	buff.push_raw(&localId, size-16);
 }
 
 const uint8_t PermissionData::ADD_ROW;

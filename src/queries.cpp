@@ -159,7 +159,7 @@ uint64_t ExmdbQueries::createFolder(const std::string& homedir, uint32_t domainI
 	auto acResponse = send<AllocateCnRequest>(homedir);
 	std::vector<TaggedPropval> propvals;
 	uint64_t now = util::ntTime();
-	SizedXID xid(22, GUID::fromDomainId(domainId), util::valueToGc(acResponse.changeNum));
+	SizedXID xid(22, GUID::fromDomainId(domainId), util::valueToGc(be64toh(acResponse.changeNum)));
 	IOBuffer tmpbuff;
 	propvals.reserve(10);
 	tmpbuff.reserve(128);
