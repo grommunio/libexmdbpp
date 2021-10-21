@@ -21,7 +21,7 @@ namespace exmdbpp::queries
 const std::vector<uint32_t> ExmdbQueries::defaultFolderProps =
 {PropTag::FOLDERID, PropTag::DISPLAYNAME, PropTag::COMMENT, PropTag::CREATIONTIME, PropTag::CONTAINERCLASS};
 
-const uint32_t ExmdbQueries::ownerRights = 0x000007e3;
+const uint32_t ExmdbQueries::ownerRights = 0x000007fb;
 
 /**
  * @brief      Load propvals into predefined fields
@@ -106,6 +106,8 @@ FolderMemberList::FolderMemberList(const std::vector<std::vector<structures::Tag
 				member.name = tp.value.str; break;
 			case PropTag::MEMBERRIGHTS:
 				member.rights= tp.value.u32; break;
+			case PropTag::SMTPADDRESS:
+				member.mail = tp.value.str; break;
 			}
 		}
 		members.emplace_back(std::move(member));
@@ -204,10 +206,30 @@ bool ExmdbQueries::deleteFolder(const std::string& homedir, uint64_t folderId)
 ExmdbQueries::PropvalTable ExmdbQueries::getFolderMemberList(const std::string& homedir, uint64_t folderId)
 {
 	auto lptResponse = send<LoadPermissionTableRequest>(homedir, folderId, 0);
-	uint32_t proptags[] = {PropTag::MEMBERID, PropTag::MEMBERNAME, PropTag::MEMBERRIGHTS};
+	uint32_t proptags[] = {PropTag::MEMBERID, PropTag::SMTPADDRESS, PropTag::MEMBERNAME, PropTag::MEMBERRIGHTS};
 	auto qtResponse = send<QueryTableRequest>(homedir, "", 0, lptResponse.tableId, proptags, 0, lptResponse.rowCount);
 	send<UnloadTableRequest>(homedir, lptResponse.tableId);
 	return qtResponse.entries;
+}
+
+
+uint32_t ExmdbQueries::setFolderMember(const std::string& homedir, uint64_t folderId, const FolderMemberList::Member& existing,
+                                       uint32_t rights, bool remove)
+{
+	uint32_t modified = remove? existing.rights & ~rights : existing.rights | rights;
+	if(modified == existing.rights)
+		return modified;
+	PermissionData permissions[1];
+	if(modified == 0)
+		permissions[0] = PermissionData(PermissionData::REMOVE_ROW, {TaggedPropval(PropTag::MEMBERID, existing.id)});
+	else if(!existing.id)
+		permissions[0] = PermissionData(PermissionData::ADD_ROW, {TaggedPropval(PropTag::SMTPADDRESS, existing.mail, false),
+		                            TaggedPropval(PropTag::MEMBERRIGHTS, modified)});
+	else permissions[0] = PermissionData(PermissionData::MODIFY_ROW, {TaggedPropval(PropTag::SMTPADDRESS, existing.mail, false),
+	                                TaggedPropval(PropTag::MEMBERRIGHTS, modified),
+	                                TaggedPropval(PropTag::MEMBERID, existing.id)});
+	send<UpdateFolderPermissionRequest>(homedir, folderId, false, permissions);
+	return modified;
 }
 
 /**
@@ -217,31 +239,37 @@ ExmdbQueries::PropvalTable ExmdbQueries::getFolderMemberList(const std::string& 
  * @param      folderId  ID of the folder
  * @param      username  Username to add to list
  * @param      rights    Bitmask of member rights
- * @param      ID        ID of an existing member to modify or 0 to create a new one
+ * @param      remove    Remove rights instead of adding them
  */
-void ExmdbQueries::setFolderMember(const std::string& homedir, uint64_t folderId, const std::string& username,
-                                  uint32_t rights, uint64_t ID)
+uint32_t ExmdbQueries::setFolderMember(const std::string& homedir, uint64_t folderId, const std::string& username,
+                                       uint32_t rights, bool remove)
 {
-	std::vector<TaggedPropval> propvals = {TaggedPropval(PropTag::SMTPADDRESS, username, false),
-	                                       TaggedPropval(PropTag::MEMBERRIGHTS, rights)};
-	if(ID)
-		propvals.emplace_back(TaggedPropval(PropTag::MEMBERID, ID));
-	PermissionData permissions[] = {PermissionData(ID? PermissionData::MODIFY_ROW : PermissionData::ADD_ROW, propvals)};
-	send<UpdateFolderPermissionRequest>(homedir, folderId, false, permissions);
+	FolderMemberList members = getFolderMemberList(homedir, folderId);
+	auto it = std::find_if(members.members.begin(), members.members.end(),
+	                       [&username](const FolderMemberList::Member& m){return m.mail == username;});
+	FolderMemberList::Member existing = it == members.members.end()? FolderMemberList::Member() : *it;
+	existing.mail = username;
+	return setFolderMember(homedir, folderId, existing, rights, remove);
 }
 
 /**
- * @brief      Remove member from member list
+ * @brief      Set folder member rights for existing user
  *
  * @param      homedir   Home directory path of the domain
  * @param      folderId  ID of the folder
- * @param      memberId  ID of the member to remove
+ * @param      ID        ID of the member
+ * @param      rights    Bitmask of member rights
+ * @param      remove    Remove rights instead of adding them
  */
-void ExmdbQueries::deleteFolderMember(const std::string& homedir, uint64_t folderId, uint64_t memberId)
+uint32_t ExmdbQueries::setFolderMember(const std::string& homedir, uint64_t folderId, uint64_t ID,
+                                       uint32_t rights, bool remove)
 {
-	std::vector<TaggedPropval> propvals = {TaggedPropval(PropTag::MEMBERID, memberId)};
-	PermissionData permissions[] = {PermissionData(PermissionData::REMOVE_ROW, propvals)};
-	send<UpdateFolderPermissionRequest>(homedir, folderId, false, permissions);
+	FolderMemberList members = getFolderMemberList(homedir, folderId);
+	auto it = std::find_if(members.members.begin(), members.members.end(),
+	                       [ID](const FolderMemberList::Member& m){return m.id == ID;});
+	if(it == members.members.end())
+		return 0;
+	return setFolderMember(homedir, folderId, *it, rights, remove);
 }
 
 /**

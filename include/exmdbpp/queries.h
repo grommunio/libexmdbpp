@@ -59,8 +59,9 @@ struct FolderMemberList
 {
 	struct Member
 	{
-		uint64_t id = 0;
 		std::string name;
+		std::string mail;
+		uint64_t id = 0;
 		uint32_t rights = 0;
 	};
 
@@ -93,7 +94,6 @@ public:
 
 	uint64_t createFolder(const std::string&, uint32_t, const std::string&, const std::string&, const std::string&);
 	bool deleteFolder(const std::string&, uint64_t);
-	void deleteFolderMember(const std::string&, uint64_t, uint64_t);
 	ProptagList getAllStoreProperties(const std::string&);
 	PropvalTable getFolderList(const std::string&, const std::vector<uint32_t>& = defaultFolderProps);
 	PropvalTable getFolderMemberList(const std::string&, uint64_t);
@@ -102,10 +102,14 @@ public:
 	PropvalList getStoreProperties(const std::string&, uint32_t, const std::vector<uint32_t>&);
 	void removeStoreProperties(const std::string&, const std::vector<uint32_t>&);
 	void resyncDevice(const std::string&, const std::string&, const std::string&);
-	void setFolderMember(const std::string&, uint64_t, const std::string&, uint32_t, uint64_t=0);
+	uint32_t setFolderMember(const std::string&, uint64_t, const std::string&, uint32_t, bool);
+	uint32_t setFolderMember(const std::string&, uint64_t, uint64_t, uint32_t, bool);
 	ProblemList setFolderProperties(const std::string&, uint32_t, uint64_t, const std::vector<structures::TaggedPropval>&);
 	ProblemList setStoreProperties(const std::string&, uint32_t, const std::vector<structures::TaggedPropval>&);
 	void unloadStore(const std::string&);
+
+private:
+	uint32_t setFolderMember(const std::string&, uint64_t, const FolderMemberList::Member&, uint32_t, bool);
 };
 
 }

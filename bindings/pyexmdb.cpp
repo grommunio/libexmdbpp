@@ -20,7 +20,7 @@ std::string hexstr(uint32_t value, uint8_t width)
 	std::string res("0x");
 	res.resize(width+2);
 	for(int64_t nibble = 4*(width-1); nibble >= 0; nibble -= 4)
-		res += chars[(value&(0xF<<nibble))>>nibble];
+		res += chars[(value&(0xFULL<<nibble))>>nibble];
 	return res;
 }
 
@@ -48,8 +48,6 @@ PYBIND11_MODULE(pyexmdb, m)
 	         py::arg("homedir"), py::arg("domainId"), py::arg("folderName"), py::arg("container"), py::arg("comment"))
 	    .def("deleteFolder", &ExmdbQueries::deleteFolder,
 	        py::arg("homedir"), py::arg("folderId"))
-	    .def("deleteFolderMember", &ExmdbQueries::deleteFolderMember,
-	         py::arg("homedir"), py::arg("folderId"), py::arg("memberId"))
 	    .def("getAllStoreProperties", &ExmdbQueries::getAllStoreProperties,
 	         py::arg("homedir"))
 	    .def("getFolderList", &ExmdbQueries::getFolderList,
@@ -68,8 +66,12 @@ PYBIND11_MODULE(pyexmdb, m)
 	         py::arg("homedir"), py::arg("proptags"))
 	    .def("resyncDevice", &ExmdbQueries::resyncDevice,
 	         py::arg("homedir"), py::arg("folderName"), py::arg("deviceId"))
-	    .def("setFolderMember", &ExmdbQueries::setFolderMember,
-	         py::arg("homedir"), py::arg("folderId"), py::arg("username"), py::arg("rights"), py::arg("ID")=0)
+	    .def("setFolderMember",
+	         py::overload_cast<const std::string&, uint64_t, uint64_t, uint32_t, bool>(&ExmdbQueries::setFolderMember),
+	         py::arg("homedir"), py::arg("folderId"), py::arg("ID"), py::arg("rights"), py::arg("remove")=false)
+	    .def("setFolderMember",
+	         py::overload_cast<const std::string&, uint64_t, const std::string&, uint32_t, bool>(&ExmdbQueries::setFolderMember),
+	         py::arg("homedir"), py::arg("folderId"), py::arg("username"), py::arg("rights"), py::arg("remove")=false)
 	    .def("setFolderProperties", &ExmdbQueries::setFolderProperties,
 	         py::arg("homedir"), py::arg("cpid"), py::arg("folderId"), py::arg("propvals"))
 	    .def("setStoreProperties", &ExmdbQueries::setStoreProperties,
@@ -98,6 +100,7 @@ PYBIND11_MODULE(pyexmdb, m)
 
 	py::class_<FolderMemberList::Member>(m, "FolderMember")
 	        .def_readonly("id", &FolderMemberList::Member::id)
+	        .def_readonly("mail", &FolderMemberList::Member::mail)
 	        .def_readonly("name", &FolderMemberList::Member::name)
 	        .def_readonly("rights", &FolderMemberList::Member::rights);
 

@@ -102,6 +102,7 @@ struct SizedXID
  */
 struct PermissionData
 {
+	PermissionData() = default;
 	PermissionData(uint8_t, const std::vector<TaggedPropval>&);
 
 	uint8_t flags;
