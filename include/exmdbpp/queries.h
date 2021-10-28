@@ -93,7 +93,7 @@ public:
 	static const uint32_t ownerRights; ///< Default rights for folder owners
 
 	uint64_t createFolder(const std::string&, uint32_t, const std::string&, const std::string&, const std::string&);
-	bool deleteFolder(const std::string&, uint64_t);
+	bool deleteFolder(const std::string&, uint64_t, bool=false);
 	ProptagList getAllStoreProperties(const std::string&);
 	PropvalTable getFolderList(const std::string&, const std::vector<uint32_t>& = defaultFolderProps);
 	PropvalTable getFolderMemberList(const std::string&, uint64_t);

@@ -187,13 +187,21 @@ uint64_t ExmdbQueries::createFolder(const std::string& homedir, uint32_t domainI
 /**
  * @brief      Delete folder
  *
+ * Folders can only deleted when empty. Clearing the folder contents can be
+ * done implicitely by setting `empty` to true.
+ *
  * @param      homedir   Home directory path of the domain
  * @param      folderId  Id of the folder to delete
+ * @param      clear     Clear folder contents before deletion
  *
  * @return     true if successful, false otherwise
  */
-bool ExmdbQueries::deleteFolder(const std::string& homedir, uint64_t folderId)
-{return send<DeleteFolderRequest>(homedir, 0, folderId, true).success;}
+bool ExmdbQueries::deleteFolder(const std::string& homedir, uint64_t folderId, bool clear)
+{
+	if(clear)
+		send<EmptyFolderRequest>(homedir, 0, "", folderId, true, true, true, true);
+	return send<DeleteFolderRequest>(homedir, 0, folderId, true).success;
+}
 
 /**
  * @brief      Get list of folder members

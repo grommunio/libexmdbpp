@@ -47,7 +47,7 @@ PYBIND11_MODULE(pyexmdb, m)
 	    .def("createFolder", &ExmdbQueries::createFolder,
 	         py::arg("homedir"), py::arg("domainId"), py::arg("folderName"), py::arg("container"), py::arg("comment"))
 	    .def("deleteFolder", &ExmdbQueries::deleteFolder,
-	        py::arg("homedir"), py::arg("folderId"))
+	        py::arg("homedir"), py::arg("folderId"), py::arg("clear")=false)
 	    .def("getAllStoreProperties", &ExmdbQueries::getAllStoreProperties,
 	         py::arg("homedir"))
 	    .def("getFolderList", &ExmdbQueries::getFolderList,
