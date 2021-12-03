@@ -4,6 +4,7 @@
  */
 
 #include <algorithm>
+#include <unordered_set>
 
 #include "queries.h"
 #include "util.h"
@@ -121,6 +122,16 @@ FolderMemberList::FolderMemberList(const std::vector<std::vector<structures::Tag
  */
 FolderMemberList::FolderMemberList(const Response_t<QueryTableRequest>& response) : FolderMemberList(response.entries)
 {}
+
+/**
+ * @brief      Check whether the member is a special member
+ *
+ * Special members do not represent actual users but are used as internal placeholders.
+ *
+ * @return     true if the member is special, false otherwise
+ */
+bool FolderMemberList::Member::special() const
+{return id == 0 || id == 0xFFFFFFFFFFFFFFFF;}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -278,6 +289,47 @@ uint32_t ExmdbQueries::setFolderMember(const std::string& homedir, uint64_t fold
 	if(it == members.members.end())
 		return 0;
 	return setFolderMember(homedir, folderId, *it, rights, remove);
+}
+
+/**
+ * @brief      Set folder member rights for a list of users
+ *
+ * Rights are added for each member in the list and removed for each member not
+ * in the list.
+ *
+ * @param      homedir   Home directory path of the domain
+ * @param      folderId  ID of the folder
+ * @param      usernames List of mail addresses to modify
+ * @param      rights    Bitmask of member rights
+ *
+ * @return     Number of members modified
+ */
+size_t ExmdbQueries::setFolderMembers(const std::string& homedir, uint64_t folderId,
+                                        const std::vector<std::string>& usernames, uint32_t rights)
+{
+	std::unordered_set<std::string> requested(usernames.begin(), usernames.end());
+	FolderMemberList members = getFolderMemberList(homedir, folderId);
+	std::vector<PermissionData> permissions;
+	permissions.reserve(members.members.size()+usernames.size()); //Usually too much, but definitely enough.
+	for(const auto& member : members.members)
+	{
+		if(member.special())
+			continue;
+		bool contained = requested.erase(member.mail);
+		uint32_t newrights = contained? member.rights | rights : member.rights & ~rights;
+		if(newrights == member.rights)
+			continue;
+		permissions.emplace_back(PermissionData(newrights? PermissionData::MODIFY_ROW : PermissionData::REMOVE_ROW,
+		                                        {TaggedPropval(PropTag::MEMBERID, member.id),
+		                                         TaggedPropval(PropTag::MEMBERRIGHTS, newrights)}));
+	}
+	for(auto& username : requested)
+		permissions.emplace_back(PermissionData(PermissionData(PermissionData::ADD_ROW,
+		                                                       {TaggedPropval(PropTag::SMTPADDRESS, username),
+		                                                        TaggedPropval(PropTag::MEMBERRIGHTS, rights)})));
+	if(permissions.size())
+		send<UpdateFolderPermissionRequest>(homedir, folderId, false, permissions);
+	return permissions.size();
 }
 
 /**

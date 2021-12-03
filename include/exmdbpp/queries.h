@@ -63,6 +63,8 @@ struct FolderMemberList
 		std::string mail;
 		uint64_t id = 0;
 		uint32_t rights = 0;
+
+		bool special() const;
 	};
 
 	FolderMemberList(const requests::Response_t<requests::QueryTableRequest>&);
@@ -104,6 +106,7 @@ public:
 	void resyncDevice(const std::string&, const std::string&, const std::string&);
 	uint32_t setFolderMember(const std::string&, uint64_t, const std::string&, uint32_t, bool);
 	uint32_t setFolderMember(const std::string&, uint64_t, uint64_t, uint32_t, bool);
+	size_t setFolderMembers(const std::string&, uint64_t, const std::vector<std::string>&, uint32_t);
 	ProblemList setFolderProperties(const std::string&, uint32_t, uint64_t, const std::vector<structures::TaggedPropval>&);
 	ProblemList setStoreProperties(const std::string&, uint32_t, const std::vector<structures::TaggedPropval>&);
 	void unloadStore(const std::string&);

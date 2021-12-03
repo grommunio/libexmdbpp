@@ -18,7 +18,7 @@ std::string hexstr(uint32_t value, uint8_t width)
 {
 	static const char* chars = "0123456789ABCDEF";
 	std::string res("0x");
-	res.resize(width+2);
+	res.reserve(width+2);
 	for(int64_t nibble = 4*(width-1); nibble >= 0; nibble -= 4)
 		res += chars[(value&(0xFULL<<nibble))>>nibble];
 	return res;
@@ -72,6 +72,8 @@ PYBIND11_MODULE(pyexmdb, m)
 	    .def("setFolderMember",
 	         py::overload_cast<const std::string&, uint64_t, const std::string&, uint32_t, bool>(&ExmdbQueries::setFolderMember),
 	         py::arg("homedir"), py::arg("folderId"), py::arg("username"), py::arg("rights"), py::arg("remove")=false)
+	    .def("setFolderMembers", &ExmdbQueries::setFolderMembers,
+	         py::arg("homedir"), py::arg("folderId"), py::arg("usernames"), py::arg("rights"))
 	    .def("setFolderProperties", &ExmdbQueries::setFolderProperties,
 	         py::arg("homedir"), py::arg("cpid"), py::arg("folderId"), py::arg("propvals"))
 	    .def("setStoreProperties", &ExmdbQueries::setStoreProperties,
@@ -102,7 +104,8 @@ PYBIND11_MODULE(pyexmdb, m)
 	        .def_readonly("id", &FolderMemberList::Member::id)
 	        .def_readonly("mail", &FolderMemberList::Member::mail)
 	        .def_readonly("name", &FolderMemberList::Member::name)
-	        .def_readonly("rights", &FolderMemberList::Member::rights);
+	        .def_readonly("rights", &FolderMemberList::Member::rights)
+	        .def_property_readonly("special", &FolderMemberList::Member::special);
 
 	py::class_<PropertyProblem>(m, "PropertyProblem")
 	        .def_readwrite("err", &PropertyProblem::err)
