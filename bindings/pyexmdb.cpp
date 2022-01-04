@@ -9,6 +9,8 @@ using namespace exmdbpp::requests;
 using namespace exmdbpp::queries;
 using namespace exmdbpp::structures;
 
+using release_gil = py::call_guard<py::gil_scoped_release>;
+
 
 template<typename T, size_t N>
 constexpr inline size_t arrsize(T(&)[N])
@@ -34,7 +36,6 @@ std::string Folder_repr(const Folder& f)
 std::string FolderList_repr(const FolderList& fl)
 {return "<List of "+std::to_string(fl.folders.size())+" folder"+(fl.folders.size() == 1? "" : "s")+">";}
 
-
 PYBIND11_MODULE(pyexmdb, m)
 {
 	m.doc() = "libexmdbpp Python bindings";
@@ -44,41 +45,41 @@ PYBIND11_MODULE(pyexmdb, m)
 	    .def_readonly_static("ownerRights", &ExmdbQueries::ownerRights)
 	    .def(py::init<const std::string&, const std::string&, const std::string&, bool>(),
 	         py::arg("host"), py::arg("port"), py::arg("homedir"), py::arg("isPrivate"))
-	    .def("createFolder", &ExmdbQueries::createFolder,
+	    .def("createFolder", &ExmdbQueries::createFolder, release_gil(),
 	         py::arg("homedir"), py::arg("domainId"), py::arg("folderName"), py::arg("container"), py::arg("comment"))
-	    .def("deleteFolder", &ExmdbQueries::deleteFolder,
+	    .def("deleteFolder", &ExmdbQueries::deleteFolder, release_gil(),
 	        py::arg("homedir"), py::arg("folderId"), py::arg("clear")=false)
-	    .def("getAllStoreProperties", &ExmdbQueries::getAllStoreProperties,
+	    .def("getAllStoreProperties", &ExmdbQueries::getAllStoreProperties,  release_gil(),
 	         py::arg("homedir"))
-	    .def("getFolderList", &ExmdbQueries::getFolderList,
+	    .def("getFolderList", &ExmdbQueries::getFolderList, release_gil(),
 	         py::arg("homedir"), py::arg("properties") = ExmdbQueries::defaultFolderProps)
-	    .def("getFolderMemberList", &ExmdbQueries::getFolderMemberList,
+	    .def("getFolderMemberList", &ExmdbQueries::getFolderMemberList, release_gil(),
 	         py::arg("homedir"), py::arg("folderId"))
-	    .def("getFolderMemberList", &ExmdbQueries::getFolderMemberList,
-	         py::arg("homedir"), py::arg("folderId"))
-	    .def("getFolderProperties", &ExmdbQueries::getFolderProperties,
+	    .def("getFolderProperties", &ExmdbQueries::getFolderProperties, release_gil(),
 	         py::arg("homedir"), py::arg("cpid"), py::arg("folderId"), py::arg("proptags") = ExmdbQueries::defaultFolderProps)
-	    .def("getStoreProperties", &ExmdbQueries::getStoreProperties,
+	    .def("getStoreProperties", &ExmdbQueries::getStoreProperties, release_gil(),
 	         py::arg("homedir"), py::arg("cpid"), py::arg("proptags"))
-	    .def("getSyncData", &ExmdbQueries::getSyncData,
+	    .def("getSyncData", &ExmdbQueries::getSyncData, release_gil(),
 	         py::arg("homedir"), py::arg("folderName"))
-	    .def("removeStoreProperties", &ExmdbQueries::removeStoreProperties,
+	    .def("removeStoreProperties", &ExmdbQueries::removeStoreProperties, release_gil(),
 	         py::arg("homedir"), py::arg("proptags"))
-	    .def("resyncDevice", &ExmdbQueries::resyncDevice,
+	    .def("resyncDevice", &ExmdbQueries::resyncDevice, release_gil(),
 	         py::arg("homedir"), py::arg("folderName"), py::arg("deviceId"))
 	    .def("setFolderMember",
 	         py::overload_cast<const std::string&, uint64_t, uint64_t, uint32_t, bool>(&ExmdbQueries::setFolderMember),
-	         py::arg("homedir"), py::arg("folderId"), py::arg("ID"), py::arg("rights"), py::arg("remove")=false)
+	         py::arg("homedir"), py::arg("folderId"), py::arg("ID"), py::arg("rights"), py::arg("remove")=false,
+	         release_gil())
 	    .def("setFolderMember",
 	         py::overload_cast<const std::string&, uint64_t, const std::string&, uint32_t, bool>(&ExmdbQueries::setFolderMember),
-	         py::arg("homedir"), py::arg("folderId"), py::arg("username"), py::arg("rights"), py::arg("remove")=false)
-	    .def("setFolderMembers", &ExmdbQueries::setFolderMembers,
+	         py::arg("homedir"), py::arg("folderId"), py::arg("username"), py::arg("rights"), py::arg("remove")=false,
+	         release_gil())
+	    .def("setFolderMembers", &ExmdbQueries::setFolderMembers, release_gil(),
 	         py::arg("homedir"), py::arg("folderId"), py::arg("usernames"), py::arg("rights"))
-	    .def("setFolderProperties", &ExmdbQueries::setFolderProperties,
+	    .def("setFolderProperties", &ExmdbQueries::setFolderProperties, release_gil(),
 	         py::arg("homedir"), py::arg("cpid"), py::arg("folderId"), py::arg("propvals"))
-	    .def("setStoreProperties", &ExmdbQueries::setStoreProperties,
+	    .def("setStoreProperties", &ExmdbQueries::setStoreProperties, release_gil(),
 	         py::arg("homedir"), py::arg("cpid"), py::arg("propvals"))
-	    .def("unloadStore", &ExmdbQueries::unloadStore,
+	    .def("unloadStore", &ExmdbQueries::unloadStore, release_gil(),
 	         py::arg("homedir"));
 
 	py::class_<Folder>(m, "Folder")
