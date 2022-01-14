@@ -3,6 +3,7 @@
  * SPDX-FileCopyrightText: 2020-2021 grommunio GmbH
  */
 #include <cstring>
+#include <limits>
 #include <type_traits>
 
 #include "structures.h"
@@ -51,14 +52,9 @@ TaggedPropval::TaggedPropval(IOBuffer& buff)
 		value.str = new char[len+1];
 		strcpy(value.str, str); break;
 	}
-	case PropvalType::BINARY: {
+	case PropvalType::BINARY:
 		uint32_t len = buff.pop<uint32_t>();
-		if(len)
-		{
-			value.ptr = new uint8_t[len];
-			memcpy(value.ptr, buff.pop_raw(len), len);
-		}
-	}
+		copyData(buff.pop_raw(len), len, true);
 	}
 }
 
@@ -214,8 +210,10 @@ TaggedPropval::TaggedPropval(uint32_t tag, const void* val, uint32_t len) : tag(
  */
 TaggedPropval::TaggedPropval(uint32_t tag, const std::string& val, bool copy) : tag(tag), type(tag&0xFFFF), owned(copy)
 {
+	if(val.size() > std::numeric_limits<uint32_t>::max())
+		throw std::out_of_range("String exceeds length limit");
 	if(copy)
-		copyData(val.c_str(), val.size()+1);
+		copyData(val.c_str(), uint32_t(val.size())+1);
 	else
 		value.str = const_cast<char*>(val.c_str());
 }
@@ -226,19 +224,14 @@ TaggedPropval::TaggedPropval(uint32_t tag, const std::string& val, bool copy) : 
  * @param      tp    TaggedPropval to copy
  */
 TaggedPropval::TaggedPropval(const TaggedPropval& tp) : tag(tp.tag), type(tp.type)
-{
-	if((type == PropvalType::STRING || type == PropvalType::WSTRING) && tp.value.str != nullptr)
-		copyStr(tp.value.str);
-	else
-		value = tp.value;
-}
+{copyValue(tp);}
 
 /**
  * @brief      Move constructor
  *
  * @param      tp    TaggedPropval to move data from
  */
-TaggedPropval::TaggedPropval(TaggedPropval&& tp) : tag(tp.tag), type(tp.type), value(tp.value), owned(tp.owned)
+TaggedPropval::TaggedPropval(TaggedPropval&& tp) noexcept : tag(tp.tag), type(tp.type), value(tp.value), owned(tp.owned)
 {tp.value.ptr = nullptr;}
 
 
@@ -251,13 +244,12 @@ TaggedPropval::TaggedPropval(TaggedPropval&& tp) : tag(tp.tag), type(tp.type), v
  */
 TaggedPropval& TaggedPropval::operator=(const TaggedPropval& tp)
 {
+	if(&tp == this)
+		return *this;
 	free();
 	tag = tp.tag;
 	type = tp.type;
-	if((type == PropvalType::STRING || type == PropvalType::WSTRING) && tp.value.str != nullptr)
-		copyStr(tp.value.str);
-	else
-		value = tp.value;
+	copyValue(tp);
 	return *this;
 }
 
@@ -268,8 +260,10 @@ TaggedPropval& TaggedPropval::operator=(const TaggedPropval& tp)
  *
  * @return     The result of the assignment
  */
-TaggedPropval& TaggedPropval::operator=(TaggedPropval&& tp)
+TaggedPropval& TaggedPropval::operator=(TaggedPropval&& tp) noexcept
 {
+	if(&tp == this)
+		return *this;
 	free();
 	tag = tp.tag;
 	type = tp.type;
@@ -386,6 +380,41 @@ std::string TaggedPropval::toString() const
 }
 
 /**
+ * @brief      Return length of the binary data
+ *
+ * The binary data contained by the TaggedPropval always has the length
+ * information prepended to the actual data. This is a convenience function
+ * to decode this length information.
+ *
+ * If the TaggedPropval is not of type BINARY or the buffer is not initialized,
+ * 0 is returned.
+ *
+ * @return     Data length in bytes
+ */
+uint32_t TaggedPropval::binaryLength() const
+{
+	if(type != PropvalType::BINARY || !value.ptr)
+		return 0;
+	uint32_t v;
+	memcpy(&v, value.ptr, sizeof(uint32_t));
+	return le32toh(v);
+}
+
+/**
+ * @brief      Return pointer to the binary data
+ *
+ * Return pointer to the pure data, without prepended lenght. The lenght of the
+ * buffer can be queried with binaryLength().
+ *
+ * If the TaggedPropval is not of type BINARY or the buffer is not initialized,
+ * nullptr is returned.
+ *
+ * @return
+ */
+const void* TaggedPropval::binaryData() const
+{return type == PropvalType::BINARY && value.u8? static_cast<const void*>(value.a8+sizeof(uint32_t)) : nullptr;}
+
+/**
  * @brief      Copy string to internal buffer
  *
  * @param      str   String to copy
@@ -394,6 +423,18 @@ void TaggedPropval::copyStr(const char* str)
 {
 	value.str = new char[strlen(str)+1];
 	strcpy(value.str, str);
+}
+
+void TaggedPropval::copyValue(const TaggedPropval& tp)
+{
+	if(tp.value.ptr == nullptr || !tp.owned)
+		value.ptr = tp.value.ptr;
+	else if((type == PropvalType::STRING || type == PropvalType::WSTRING))
+		copyStr(tp.value.str);
+	else if(type == PropvalType::BINARY)
+		copyData(tp.value.ptr, tp.binaryLength()+sizeof(uint32_t));
+	else
+		value = tp.value;
 }
 
 /**
@@ -431,27 +472,21 @@ void TaggedPropval::free()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
- * @brief      Create GUID from domain ID
+ * @brief      Initialize GUID from string
  *
- * @param      domainId  Domain ID
+ * The string must be in the format xxxxxxxx-xxxx-xxxx-xxxxxxxxxxxx, where
+ * each x is a hexadecimal character.
  *
- * @return     Initialized GUID object
+ * @param      str      String to parse
+ *
+ * @throws     std::invalid_argument      Input string parsing failed
  */
-GUID GUID::fromDomainId(uint32_t domainId)
+GUID::GUID(const std::string& str)
 {
-	GUID guid;
-	guid.timeLow = domainId;
-	guid.timeMid = 0x0afb;
-	guid.timeHighVersion = 0x7df6;
-	guid.clockSeq[0] = 0x91;
-	guid.clockSeq[1] = 0x92;
-	guid.node[0] = 0x49;
-	guid.node[1] = 0x88;
-	guid.node[2] = 0x6a;
-	guid.node[3] = 0xa7;
-	guid.node[4] = 0x38;
-	guid.node[5] = 0xce;
-	return guid;
+	if(sscanf(str.c_str(),"%08x-%04hx-%04hx-%02hhx%02hhx-%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx",
+	          &timeLow, &timeMid, &timeHighVersion, &clockSeq[0], &clockSeq[1],
+	          &node[0], &node[1], &node[2], &node[3], &node[4], &node[5]) != 11)
+		throw std::invalid_argument("Failed to parse guid '"+str+"'");
 }
 
 
@@ -876,5 +911,19 @@ void IOBuffer::Serialize<PermissionData>::push(IOBuffer& buff, const PermissionD
 template<>
 void IOBuffer::Serialize<Restriction>::push(IOBuffer& buff, const Restriction& res)
 {res.serialize(buff);}
+
+template<>
+void IOBuffer::Serialize<PropertyName>::push(IOBuffer& buff, const PropertyName& pn)
+{
+	buff.push(pn.kind, pn.guid);
+	if(pn.kind == PropertyName::ID)
+		return buff.push(pn.lid);
+	if(pn.kind != PropertyName::NAME)
+		return;
+	if(pn.name.size() > std::numeric_limits<uint8_t>::max())
+		throw std::range_error("Cannot serialize named property: Name too long ("+std::to_string(pn.name.size())+
+	                           "vs 255 chars)");
+	buff.push(uint8_t(pn.name.size()), pn.name);
+}
 
 }

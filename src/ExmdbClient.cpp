@@ -50,6 +50,29 @@ ExmdbClient::Connection::~Connection()
 {close();}
 
 /**
+ * @brief      Move constuctor
+ *
+ * @param      Connection to move from
+ */
+ExmdbClient::Connection::Connection(ExmdbClient::Connection&& other) noexcept : sock(other.sock)
+{other.sock = -1;}
+
+/**
+ * @brief      Move assignment operator
+ *
+ * @param      Connection to move from
+ */
+ExmdbClient::Connection& ExmdbClient::Connection::operator=(ExmdbClient::Connection&& other) noexcept
+{
+	if(this == &other)
+		return *this;
+	close();
+	sock = other.sock;
+	other.sock = -1;
+	return *this;
+}
+
+/**
  * @brief      Close the socket
  *
  * Has no effect when the socket is already closed.

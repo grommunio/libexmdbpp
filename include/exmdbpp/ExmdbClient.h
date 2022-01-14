@@ -35,6 +35,8 @@ class ExmdbClient
 	public:
 		Connection() = default;
 		~Connection();
+		Connection(Connection&&) noexcept;
+		Connection& operator=(Connection&&) noexcept;
 
 		void connect(const std::string&, const std::string&);
 		void close();

@@ -22,6 +22,7 @@ static const uint8_t PUSH_ERROR = 0x09;
 namespace CallId
 {
 static const uint8_t CONNECT = 0x00;
+static const uint8_t GET_NAMED_PROPIDS = 0x04;
 static const uint8_t GET_STORE_ALL_PROPTAGS = 0x08;
 static const uint8_t GET_STORE_PROPERTIES = 0x09;
 static const uint8_t SET_STORE_PROPERTIES = 0x0a;
@@ -43,6 +44,8 @@ static const uint8_t LOAD_MESSAGE_INSTANCE = 0x39;
 static const uint8_t READ_MESSAGE_INSTANCE = 0x3e;
 static const uint8_t UNLOAD_INSTANCE = 0x46;
 static const uint8_t GET_INSTANCE_PROPERTIES = 0x48;
+static const uint8_t GET_MESSAGE_INSTANCE_RCPTS = 0x4f;
+static const uint8_t QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE = 0x54;
 static const uint8_t GET_MESSAGE_PROPERTIES = 0x57;
 static const uint8_t ALLOCATE_CN = 0x5c;
 static const uint8_t UPDATE_FOLDER_PERMISSION = 0x6a;
@@ -57,6 +60,40 @@ static const uint64_t IPMSUBTREE = 0x02;
 static const uint64_t NONIPMSUBTREE = 0x03;
 static const uint64_t EFORMSREGISTRY = 0x04;
 static const uint64_t CUSTOM = 0x05;
+}
+
+namespace PrivateFid
+{
+static const uint64_t ROOT = 0x01;
+static const uint64_t DEFERRED_ACTION = 0x02;
+static const uint64_t SPOOLER_QUEUE = 0x03;
+static const uint64_t SHORTCUTS = 0x04;
+static const uint64_t FINDER = 0x05;
+static const uint64_t VIEWS = 0x06;
+static const uint64_t COMMON_VIEWS = 0x07;
+static const uint64_t SCHEDULE = 0x08;
+static const uint64_t IPMSUBTREE = 0x09;
+static const uint64_t SENT_ITEMS = 0x0a;
+static const uint64_t DELETED_ITEMS = 0x0b;
+static const uint64_t OUTBOX = 0x0c;
+static const uint64_t INBOX = 0x0d;
+static const uint64_t DRAFT = 0x0e;
+static const uint64_t CALENDAR = 0x0f;
+static const uint64_t JOURNAL = 0x10;
+static const uint64_t NOTES = 0x11;
+static const uint64_t TASKS = 0x12;
+static const uint64_t CONTACTS = 0x13;
+static const uint64_t QUICKCONTACTS = 0x14;
+static const uint64_t IMCONTACTLIST = 0x15;
+static const uint64_t GALCONTACTS = 0x16;
+static const uint64_t JUNK = 0x17;
+static const uint64_t LOCAL_FREEBUSY = 0x18;
+static const uint64_t SYNC_ISSUES = 0x19;
+static const uint64_t CONFLICTS = 0x1a;
+static const uint64_t LOCAL_FAILURES = 0x1b;
+static const uint64_t SERVER_FAILURES = 0x1c;
+static const uint64_t CONVERSATION_ACTION_SETTINGS = 0x1d;
+static const uint64_t CUSTOM = 0x1e;
 }
 
 namespace Permission
@@ -83,6 +120,18 @@ namespace FolderType
 static const uint32_t ROOT = 0x0;
 static const uint32_t GENERIC = 0x1;
 static const uint32_t SEARCH = 0x2;
+}
+
+namespace TableFlags
+{
+static const uint8_t ASSOCIATED = 0x2;
+static const uint8_t DEPTH = 0x4;
+static const uint8_t DEFERREDERRORS = 0x8;
+static const uint8_t NONOTIFICATIONS = 0x10;
+static const uint8_t SOFTDELETES = 0x20;
+static const uint8_t USEUNICODE = 0x40;
+static const uint8_t SUPPRESSNOTIFICATIONS = 0x80;
+static const uint8_t CONVERSATIONMEMBERS = 0x80;
 }
 
 namespace PropvalType
@@ -113,6 +162,10 @@ static const uint16_t STRING_ARRAY = 0x101e;
 static const uint16_t WSTRING_ARRAY = 0x101f;
 static const uint16_t GUID_ARRAY = 0x1048;
 static const uint16_t BINARY_ARRAY = 0x1102;
+
+constexpr uint16_t tagType(uint32_t tag)
+{return tag & 0xFFFF;}
+
 }
 
 namespace PropTag

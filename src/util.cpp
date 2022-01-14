@@ -26,6 +26,18 @@ static bool isBigEndian = bool(*reinterpret_cast<const uint8_t*>(&endianHelper))
 uint64_t valueToGc(uint64_t value)
 {return htobe64(value<<16);}
 
+/**
+ * @brief      Convert GC buffer to value
+ *
+ * Inverse of valueToGc.
+ *
+ * @param      value   GC to convert
+ *
+ * @return
+ */
+uint64_t gcToValue(uint64_t gc)
+{return be64toh(gc)&0xFFFFFFFFFFFF;}
+
 uint64_t makeEid(uint16_t replid, uint64_t gc)
 {return replid | (gc << (isBigEndian? 0 : 16));}
 

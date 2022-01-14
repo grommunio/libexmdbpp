@@ -18,12 +18,10 @@ namespace exmdbpp::structures
 class TaggedPropval
 {
 public:
-
-
 	TaggedPropval() = default;
 	explicit TaggedPropval(IOBuffer&);
 	TaggedPropval(const TaggedPropval&);
-	TaggedPropval(TaggedPropval&&);
+	TaggedPropval(TaggedPropval&&) noexcept;
 	~TaggedPropval();
 
 	TaggedPropval(uint32_t, uint8_t);
@@ -38,10 +36,12 @@ public:
 	TaggedPropval(uint32_t, const std::string&, bool=true);
 
 	TaggedPropval& operator=(const TaggedPropval&);
-	TaggedPropval& operator=(TaggedPropval&&);
+	TaggedPropval& operator=(TaggedPropval&&) noexcept;
 
 	std::string printValue() const;
 	std::string toString() const;
+	uint32_t binaryLength() const;
+	const void* binaryData() const;
 
 	uint32_t tag = 0; ///< Tag identifier
 	uint16_t type = 0; ///< Type of the tag (either derived from tag or explicitely specified if tag type is UNSPECIFIED)
@@ -63,6 +63,7 @@ private:
 	bool owned = true; ///< Whether the memory stored in pointer values is owned (automatically deallocated in destructor)
 
 	void copyStr(const char*);
+	void copyValue(const TaggedPropval&);
 	void copyData(const void*, uint32_t len, bool=false);
 	void free();
 };
@@ -74,13 +75,18 @@ private:
  */
 struct GUID
 {
+	GUID() = default;
+	GUID(const std::string&);
+	constexpr GUID(uint32_t, uint16_t, uint16_t, const std::array<uint8_t,2>&, const std::array<uint8_t, 6>&);
+
 	uint32_t timeLow;
 	uint16_t timeMid;
 	uint16_t timeHighVersion;
 	std::array<uint8_t, 2> clockSeq;
 	std::array<uint8_t, 6> node;
 
-	static GUID fromDomainId(uint32_t);
+	static constexpr GUID fromDomainId(uint32_t);
+	static GUID fromString(const std::string&);
 };
 
 /**
@@ -111,6 +117,23 @@ struct PermissionData
 	static const uint8_t ADD_ROW = 0x01;
 	static const uint8_t MODIFY_ROW = 0x02;
 	static const uint8_t REMOVE_ROW = 0x04;
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+struct PropertyName
+{
+	PropertyName(const GUID&, uint32_t lid);
+	PropertyName(const GUID&, const std::string&);
+
+
+	uint8_t kind;
+	GUID guid;
+	uint32_t lid = 0;
+	std::string name;
+
+	static const uint8_t ID = 0;
+	static const uint8_t NAME = 1;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -176,16 +199,6 @@ public:
 	operator bool() const;
 
 private:
-/* Un-comment and replace unique_ptrs below for usage with SWIG
-	template<typename T>
-	struct acu_ptr : public std::unique_ptr<T> //Auto-copy unique_ptr
-	{
-		using std::unique_ptr<T>::unique_ptr;
-		inline acu_ptr<T>(const acu_ptr<T>& other) {if(other) std::unique_ptr<T>::reset(new T(*other));}
-		inline acu_ptr<T>& operator=(const acu_ptr<T>& other) {std::unique_ptr<T>::reset(other? new T(*other): nullptr); return *this;}
-	};
-*/
-
 	enum class Type : uint8_t {
 		AND = 0x00,
 		OR = 0x01,
@@ -311,6 +324,27 @@ struct MessageContent
 	std::vector<AttachmentContent> attachments;
 };
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+constexpr GUID::GUID(uint32_t timeLow, uint16_t timeMid, uint16_t timeHighVersion, const std::array<uint8_t, 2>& clockSeq,
+                     const std::array<uint8_t, 6>& node) :
+                     timeLow(timeLow), timeMid(timeMid), timeHighVersion(timeHighVersion), clockSeq(clockSeq), node(node)
+{}
+
+/**
+ * @brief      Create GUID from domain ID
+ *
+ * @param      domainId  Domain ID
+ *
+ * @return     Initialized GUID object
+ */
+constexpr GUID GUID::fromDomainId(uint32_t domainId)
+{return GUID(domainId, 0x0afb, 0x7df6, {0x91, 0x92}, {0x49, 0x88, 0x6a, 0xa7, 0x38, 0xce});}
+
+
+inline PropertyName::PropertyName(const GUID& guid, uint32_t lid) : kind(PropertyName::ID), guid(guid), lid(lid) {}
+inline PropertyName::PropertyName(const GUID& guid, const std::string& name) : kind(PropertyName::ID), guid(guid), name(name) {}
+
 }
 
 namespace exmdbpp
@@ -323,5 +357,6 @@ template<> void IOBuffer::Serialize<structures::PermissionData>::push(IOBuffer&,
 template<> void IOBuffer::Serialize<structures::GUID>::push(IOBuffer&, const structures::GUID&);
 template<> void IOBuffer::Serialize<structures::SizedXID>::push(IOBuffer&, const structures::SizedXID&);
 template<> void IOBuffer::Serialize<structures::Restriction>::push(IOBuffer&, const structures::Restriction&);
+template<> void IOBuffer::Serialize<structures::PropertyName>::push(IOBuffer&, const structures::PropertyName&);
 
 }

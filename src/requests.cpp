@@ -219,6 +219,18 @@ Response<EmptyFolderRequest::callId>::Response(IOBuffer& buff) : partial(buff.po
 Response<LoadMessageInstanceRequest::callId>::Response(IOBuffer& buff) : instanceId(buff.pop<uint32_t>())
 {}
 
+/**
+ * @brief      Deserialize list of property IDs
+ *
+ * @param      buff  Buffer containing the data
+ */
+Response<GetNamedPropIdsRequest::callId>::Response(IOBuffer& buff)
+{
+	propIds.resize(buff.pop<uint16_t>());
+	for(uint16_t& propId : propIds)
+		buff.pop(propId);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Explicit template instantiations for requests
 
@@ -230,13 +242,16 @@ template struct Request<constants::CallId::GET_FOLDER_ALL_PROPTAGS, uint64_t>;
 template struct Request<constants::CallId::GET_FOLDER_BY_NAME, uint64_t, std::string>;
 template struct Request<constants::CallId::GET_FOLDER_PROPERTIES, uint32_t, uint64_t, Collection<uint16_t, uint32_t>>;
 template struct Request<constants::CallId::GET_INSTANCE_PROPERTIES, uint32_t, uint32_t, Collection<uint16_t, uint32_t>>;
+template struct Request<constants::CallId::GET_MESSAGE_INSTANCE_RCPTS, uint32_t, uint32_t, uint16_t>;
 template struct Request<constants::CallId::GET_MESSAGE_PROPERTIES, std::string, uint32_t, uint64_t, Collection<uint16_t, uint32_t>>;
+template struct Request<constants::CallId::GET_NAMED_PROPIDS, bool, Collection<uint16_t, structures::PropertyName>>;
 template struct Request<constants::CallId::GET_STORE_ALL_PROPTAGS>;
 template struct Request<constants::CallId::GET_STORE_PROPERTIES, uint32_t, Collection<uint16_t, uint32_t>>;
 template struct Request<constants::CallId::LOAD_HIERARCHY_TABLE, uint64_t, std::string, uint8_t>;
 template struct Request<constants::CallId::LOAD_MESSAGE_INSTANCE, std::string, uint32_t, bool, uint64_t, uint64_t>;
 template struct Request<constants::CallId::LOAD_PERMISSION_TABLE, uint64_t, uint8_t>;
 template struct Request<constants::CallId::QUERY_FOLDER_MESSAGES, uint64_t>;
+template struct Request<constants::CallId::QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE, uint32_t, Collection<uint16_t, uint32_t>, uint32_t, uint32_t>;
 template struct Request<constants::CallId::QUERY_TABLE, std::string, uint32_t, uint32_t, Collection<uint16_t, uint32_t>, uint32_t, uint32_t>;
 template struct Request<constants::CallId::REMOVE_STORE_PROPERTIES, Collection<uint16_t, uint32_t>>;
 template struct Request<constants::CallId::SET_FOLDER_PROPERTIES, uint32_t, uint64_t, Collection<uint16_t, structures::TaggedPropval>>;

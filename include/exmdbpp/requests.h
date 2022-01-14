@@ -53,7 +53,6 @@ template<typename SizeType, typename T>
 inline Collection<SizeType, T>::Collection(const std::vector<T>& data) noexcept : b(data.data()), e(data.data()+data.size())
 {}
 
-
 /**
  * @brief      Construct from array
  *
@@ -505,7 +504,7 @@ struct response_map<GetFolderPropertiesRequest::callId>
  * @brief   Get instance properties
  *
  * @param   string      homedir
- * @param   uint32_t    sizeLimit
+ * @param   uint32_t    sizeLimit (unused)
  * @param   uint32_t    instanceId
  * @param   uint32_t[]  proptags
  *
@@ -521,6 +520,29 @@ struct GetInstancePropertiesRequest : public Request<constants::CallId::GET_INST
 template<>
 struct response_map<GetInstancePropertiesRequest::callId>
 {using type = PropvalResponse;};
+
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief   Get message instance recipients
+ *
+ * @param   string      homedir
+ * @param   uint32_t    instanceId
+ * @param   uint32_t    rowId
+ * @param   uint16_t    needCount
+ *
+ * @return PropvalResponse
+ */
+struct GetMessageInstanceRecipientsRequest : public Request<constants::CallId::GET_MESSAGE_INSTANCE_RCPTS,
+        uint32_t, uint32_t, uint16_t>
+{};
+
+/**
+ * Response type override for get message instance recipients request (-> TableResponse)
+ */
+template<>
+struct response_map<GetMessageInstanceRecipientsRequest::callId>
+{using type = TableResponse;};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -545,6 +567,35 @@ struct GetMessagePropertiesRequest : public Request<constants::CallId::GET_MESSA
 template<>
 struct response_map<GetMessagePropertiesRequest::callId>
 {using type = PropvalResponse;};
+
+//////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief   Get tag IDs of named properties
+ *
+ * @param   string      homedir
+ * @param   create      Whether to create requested IDs if they don't exist
+ * @param   propnames   List of property specification to query
+ *
+ * @return  Response<GetNamedPropIds::callId>
+ */
+struct GetNamedPropIdsRequest : public Request<constants::CallId::GET_NAMED_PROPIDS,
+        bool, Collection<uint16_t, structures::PropertyName>>
+{};
+
+/**
+ * @brief   Response specialization for GetNamedPropIdsRequest
+ *
+ * Note that the returned values only contain the 16 bit property IDs, but not
+ * the type that is required to make a working TaggedProperty.
+ */
+template<>
+struct Response<GetNamedPropIdsRequest::callId>
+{
+	explicit Response(IOBuffer&);
+
+	std::vector<uint16_t> propIds; ///< ID of the loaded instance
+};
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -715,6 +766,30 @@ struct response_map<QueryFolderMessagesRequest::callId>
 {using type = TableResponse;};
 
 ///////////////////////////////////////////////////////////////////////////////
+///
+/**
+ * @brief   Get information about message instance attachments
+ *
+ * @param   string      homedir
+ * @param   uint32_t    instanceId
+ * @param   uint32_t[]  proptags
+ * @param   uint32_t    startPos
+ * @param   uint32_t     rowNeeded
+ *
+ * @return  Response<QueryTableRequest::callId>
+ */
+struct QueryMessageInstanceAttachmentsTableRequest : public Request<constants::CallId::QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE,
+        uint32_t, Collection<uint16_t, uint32_t>, uint32_t, uint32_t>
+{};
+
+/**
+ * @brief      Response type override for QueryMessageInstanceAttachmentsTableRequest (-> TableResponse)
+ */
+template<>
+struct response_map<QueryMessageInstanceAttachmentsTableRequest::callId>
+{using type = TableResponse;};
+
+///////////////////////////////////////////////////////////////////////////////
 
 /**
  * @brief   Retrieve data from previously loaded table
@@ -859,17 +934,6 @@ struct response_map<SetStorePropertiesRequest::callId>
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
- * @brief   Close store database
- *
- * @param   string  homedir
- *
- * @return  NullResponse
- */
-struct UnloadStoreRequest : public Request<constants::CallId::UNLOAD_STORE>{};
-
-///////////////////////////////////////////////////////////////////////////////
-
-/**
  * @brief   Unload instance
  *
  * @param   string      homedir
@@ -878,6 +942,17 @@ struct UnloadStoreRequest : public Request<constants::CallId::UNLOAD_STORE>{};
  * @return  NullResponse
  */
 struct UnloadInstanceRequest : public Request<constants::CallId::UNLOAD_INSTANCE, uint32_t> {};
+
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief   Close store database
+ *
+ * @param   string  homedir
+ *
+ * @return  NullResponse
+ */
+struct UnloadStoreRequest : public Request<constants::CallId::UNLOAD_STORE>{};
 
 ///////////////////////////////////////////////////////////////////////////////
 
