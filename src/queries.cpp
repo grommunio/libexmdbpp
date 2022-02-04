@@ -429,7 +429,9 @@ ExmdbQueries::SyncData ExmdbQueries::getSyncData(const std::string& homedir, con
 	uint32_t fidTags[] = {PropTag::FOLDERID, PropTag::DISPLAYNAME};
 	uint32_t bodyTag[] = {PropTag::BODY};
 	uint32_t midTag[] = {PropTag::MID};
-	Restriction ddFilter = Restriction::PROPERTY(Restriction::EQ, 0, TaggedPropval(PropTag::DISPLAYNAME, "devicedata"));
+	Restriction ddFilter =
+	        Restriction::AND({Restriction::PROPERTY(Restriction::EQ, 0, TaggedPropval(PropTag::DISPLAYNAME, "devicedata")),
+	                          Restriction::PROPERTY(Restriction::EQ, 0, TaggedPropval(PropTag::MESSAGECLASS, "IPM.Note.GrommunioState"))});
 
 	SyncData data;
 
@@ -445,8 +447,6 @@ ExmdbQueries::SyncData ExmdbQueries::getSyncData(const std::string& homedir, con
 		auto content = send<LoadContentTableRequest>(homedir, 0, subfolder[0].value.u64, "", 2, ddFilter);
 		auto table = send<QueryTableRequest>(homedir, "", 0, content.tableId, midTag, 0, content.rowCount);
 		send<UnloadTableRequest>(homedir, content.tableId);
-		if(table.entries.empty())
-			continue;
 		if(table.entries.empty())
 			continue;
 		auto& msgobject = table.entries[0];

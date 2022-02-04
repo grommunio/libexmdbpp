@@ -216,6 +216,15 @@ private:
 		XNULL = 0xff,
 	};
 
+	template<typename T>
+	struct acu_ptr : public std::unique_ptr<T> //Auto-copy unique_ptr
+	{
+		using std::unique_ptr<T>::unique_ptr;
+		inline acu_ptr<T>(const acu_ptr<T>& other) {if(other) std::unique_ptr<T>::reset(new T(*other));}
+		inline acu_ptr<T>& operator=(const acu_ptr<T>& other) {std::unique_ptr<T>::reset(other? new T(*other): nullptr); return *this;}
+	};
+
+
 	struct RChain
 	{
 		explicit RChain(std::vector<Restriction>&&);
@@ -225,7 +234,7 @@ private:
 	struct RNot
 	{
 		explicit RNot(Restriction&&);
-		std::unique_ptr<Restriction> res;
+		acu_ptr<Restriction> res;
 	};
 
 	struct RContent
@@ -278,21 +287,21 @@ private:
 	{
 		RSubObj(uint32_t, Restriction&&);
 		uint32_t subobject;
-		std::unique_ptr<Restriction> res;
+		acu_ptr<Restriction> res;
 	};
 
 	struct RComment
 	{
 		explicit RComment(std::vector<TaggedPropval>&&, Restriction&&=Restriction::XNULL());
 		std::vector<TaggedPropval> propvals;
-		std::unique_ptr<Restriction> res;
+		acu_ptr<Restriction> res;
 	};
 
 	struct RCount
 	{
 		RCount(uint32_t, Restriction&&);
 		uint32_t count;
-		std::unique_ptr<Restriction> subres;
+		acu_ptr<Restriction> subres;
 	};
 
 	///////////////////////////////////////////////////////////////////////////////
