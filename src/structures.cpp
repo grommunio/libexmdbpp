@@ -757,7 +757,7 @@ void Restriction::serialize(IOBuffer& buff) const
 	case Type::AND:
 	case Type::OR: {
 		const std::vector<Restriction>* ress = type == Type::AND? &std::get<size_t(Type::AND)>(res).elements : &std::get<size_t(Type::OR)>(res).elements;
-		if(ress->size() > 2ull<<32)
+		if(ress->size() > UINT32_MAX)
 			throw std::runtime_error("Too many sub-restrictions ("+std::to_string(ress->size())+")");
 		buff.push(uint32_t(ress->size()));
 		for(const Restriction& r : *ress)
