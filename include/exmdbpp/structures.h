@@ -220,8 +220,8 @@ private:
 	struct acu_ptr : public std::unique_ptr<T> //Auto-copy unique_ptr
 	{
 		using std::unique_ptr<T>::unique_ptr;
-		inline acu_ptr(const acu_ptr<T>& other) {if(other) std::unique_ptr<T>::reset(new T(*other));}
-		inline acu_ptr<T>& operator=(const acu_ptr<T>& other) {std::unique_ptr<T>::reset(other? new T(*other): nullptr); return *this;}
+		inline acu_ptr(const acu_ptr<T>& other) {if(other) this->reset(new T(*other));}
+		inline acu_ptr<T>& operator=(const acu_ptr<T>& other) {this->reset(other? new T(*other): nullptr); return *this;}
 	};
 
 
