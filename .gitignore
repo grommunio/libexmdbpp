@@ -1,2 +1,8 @@
-build
-doc
+/build
+/doc
+/CMakeCache.txt
+/CMakeFiles/
+/Makefile
+/cmake_install.cmake
+/libexmdbpp.so
+/libexmdbpp.so.0
