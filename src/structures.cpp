@@ -50,11 +50,37 @@ TaggedPropval::TaggedPropval(IOBuffer& buff)
 		const char* str = buff.pop<const char*>();
 		size_t len = strlen(str);
 		value.str = new char[len+1];
-		strcpy(value.str, str); break;
+		strcpy(value.str, str);
+		break;
 	}
-	case PropvalType::BINARY:
+	case PropvalType::BINARY: {
 		uint32_t len = buff.pop<uint32_t>();
 		copyData(buff.pop_raw(len), len, true);
+		break;
+	}
+	//Currently unusable types, skip data entirely
+	case PropvalType::SHORT_ARRAY:
+		buff.pop_raw(buff.pop<uint32_t>()*2); break;
+	case PropvalType::LONG_ARRAY:
+	case PropvalType::FLOAT_ARRAY:
+		buff.pop_raw(buff.pop<uint32_t>()*4); break;
+	case PropvalType::LONGLONG_ARRAY:
+	case PropvalType::DOUBLE_ARRAY:
+	case PropvalType::CURRENCY_ARRAY:
+	case PropvalType::FLOATINGTIME_ARRAY:
+		buff.pop_raw(buff.pop<uint32_t>()*8); break;
+	case PropvalType::STRING_ARRAY: {
+		uint32_t count = buff.pop<uint32_t>();
+		for(uint32_t i = 0; i < count; ++i)
+			buff.pop<const char*>();
+		break;
+	}
+	case PropvalType::BINARY_ARRAY: {
+		uint32_t count = buff.pop<uint32_t>();
+		for(uint32_t i = 0; i < count; ++i)
+			buff.pop_raw(buff.pop<uint32_t>());
+		break;
+	}
 	}
 }
 
