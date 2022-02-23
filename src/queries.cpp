@@ -244,9 +244,10 @@ uint32_t ExmdbQueries::setFolderMember(const std::string& homedir, uint64_t fold
 	else if(!existing.id)
 		permissions[0] = PermissionData(PermissionData::ADD_ROW, {TaggedPropval(PropTag::SMTPADDRESS, existing.mail, false),
 		                            TaggedPropval(PropTag::MEMBERRIGHTS, modified)});
-	else permissions[0] = PermissionData(PermissionData::MODIFY_ROW, {TaggedPropval(PropTag::SMTPADDRESS, existing.mail, false),
-	                                TaggedPropval(PropTag::MEMBERRIGHTS, modified),
-	                                TaggedPropval(PropTag::MEMBERID, existing.id)});
+	else
+		permissions[0] = PermissionData(PermissionData::MODIFY_ROW, {TaggedPropval(PropTag::SMTPADDRESS, existing.mail, false),
+		                            TaggedPropval(PropTag::MEMBERRIGHTS, modified),
+		                            TaggedPropval(PropTag::MEMBERID, existing.id)});
 	send<UpdateFolderPermissionRequest>(homedir, folderId, false, permissions);
 	return modified;
 }

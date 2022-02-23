@@ -249,7 +249,7 @@ TaggedPropval::TaggedPropval(uint32_t tag, const std::string& val, bool copy) : 
  *
  * @param      tp    TaggedPropval to copy
  */
-TaggedPropval::TaggedPropval(const TaggedPropval& tp) : tag(tp.tag), type(tp.type)
+TaggedPropval::TaggedPropval(const TaggedPropval& tp) : tag(tp.tag), type(tp.type), owned(tp.owned)
 {copyValue(tp);}
 
 /**
@@ -275,6 +275,7 @@ TaggedPropval& TaggedPropval::operator=(const TaggedPropval& tp)
 	free();
 	tag = tp.tag;
 	type = tp.type;
+	owned = tp.owned;
 	copyValue(tp);
 	return *this;
 }
