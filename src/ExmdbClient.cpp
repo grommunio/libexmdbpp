@@ -21,6 +21,10 @@ namespace exmdbpp
 using namespace requests;
 using namespace constants;
 
+
+const uint8_t ExmdbClient::AUTO_RECONNECT = 1<<0; ///< Automatically reconnect on dispatch error
+
+
 /**
  * @brief      Constructor
  *
@@ -156,6 +160,12 @@ void ExmdbClient::Connection::send(IOBuffer& buff)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+ExmdbClient::ConnParm::ConnParm(const std::string& host, const std::string& port, const std::string& prefix, bool isPrivate) :
+    host(host), port(port), prefix(prefix), isPrivate(isPrivate)
+{}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 /**
  * @brief      Initialize client and connect to server
  *
@@ -164,7 +174,8 @@ void ExmdbClient::Connection::send(IOBuffer& buff)
  * @param      prefix     Data area prefix (passed to ConnectRecquest)
  * @param      isPrivate  Whether to access private or public data (passed to ConnectRequest)
  */
-ExmdbClient::ExmdbClient(const std::string& host, const std::string& port, const std::string& prefix, bool isPrivate)
+ExmdbClient::ExmdbClient(const std::string& host, const std::string& port, const std::string& prefix, bool isPrivate,
+                         uint8_t flags) : params(host, port, prefix, isPrivate), flags(flags)
 {connect(host, port, prefix, isPrivate);}
 
 /**
@@ -177,8 +188,34 @@ ExmdbClient::ExmdbClient(const std::string& host, const std::string& port, const
  */
 void ExmdbClient::connect(const std::string& host, const std::string& port, const std::string& prefix, bool isPrivate)
 {
+	params = ConnParm(host, port, prefix, isPrivate);
 	connection.connect(host, port);
 	send<ConnectRequest>(prefix, isPrivate);
+}
+
+/**
+ * @brief      Reconnect to the exmdb server
+ *
+ * If reconnect fails, the current connection is left intact.
+ *
+ * @return     true if successful, false otherwise
+ */
+bool ExmdbClient::reconnect()
+{
+	Connection newconn;
+	try
+	{
+		newconn.connect(params.host, params.port);
+		buffer.clear();
+		buffer.start();
+		ConnectRequest::write(buffer, params.prefix, params.isPrivate);
+		buffer.finalize();
+		newconn.send(buffer);
+		connection = std::move(newconn);
+		return true;
+	}
+	catch (...)
+	{return false;}
 }
 
 }

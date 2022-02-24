@@ -43,8 +43,9 @@ PYBIND11_MODULE(pyexmdb, m)
 	py::class_<ExmdbQueries>(m, "ExmdbQueries", "Main exmdb client interface")
 	    .def_readonly_static("defaultFolderProps", &ExmdbQueries::defaultFolderProps)
 	    .def_readonly_static("ownerRights", &ExmdbQueries::ownerRights)
-	    .def(py::init<const std::string&, const std::string&, const std::string&, bool>(),
-	         py::arg("host"), py::arg("port"), py::arg("homedir"), py::arg("isPrivate"))
+	    .def_readonly_static("AUTO_RECONNECT", &ExmdbQueries::AUTO_RECONNECT)
+	    .def(py::init<const std::string&, const std::string&, const std::string&, bool, uint8_t>(),
+	         py::arg("host"), py::arg("port"), py::arg("homedir"), py::arg("isPrivate"), py::arg("flags")=0)
 	    .def("createFolder", &ExmdbQueries::createFolder, release_gil(),
 	         py::arg("homedir"), py::arg("domainId"), py::arg("folderName"), py::arg("container"), py::arg("comment"))
 	    .def("deleteFolder", &ExmdbQueries::deleteFolder, release_gil(),

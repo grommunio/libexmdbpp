@@ -46,17 +46,33 @@ class ExmdbClient
 		int sock = -1; ///< TCP socket to send and receive data
 	};
 
+	struct ConnParm
+	{
+		ConnParm() = default;
+		ConnParm(const std::string&, const std::string&, const std::string&, bool);
+		std::string host;
+		std::string port;
+		std::string prefix;
+		bool isPrivate;
+	};
+
 public:
 	ExmdbClient() = default;
-	ExmdbClient(const std::string&, const std::string&, const std::string&, bool);
+	ExmdbClient(const std::string&, const std::string&, const std::string&, bool, uint8_t=0);
 
 	void connect(const std::string&, const std::string&, const std::string&, bool);
+	bool reconnect();
 
 	template<class Request, typename... Args>
 	requests::Response_t<Request> send(const Args&...);
+
+	static const uint8_t AUTO_RECONNECT;
 private:
 	Connection connection; ///< Connection used to send and receive data
+	ConnParm params; ///< Connection parameters
 	IOBuffer buffer; ///< Buffer managing data to send / received data
+	uint8_t flags = 0; ///< Client flags
+
 };
 
 /**
@@ -79,7 +95,13 @@ inline requests::Response_t<Request> ExmdbClient::send(const Args&... args)
 	buffer.start();
 	Request::write(buffer, args...);
 	buffer.finalize();
-	connection.send(buffer);
+	try {connection.send(buffer);}
+	catch (const ExmdbError& err)
+	{
+		if (err.code == 8 && flags & AUTO_RECONNECT)  // DISPATCH_ERROR
+			reconnect();
+		throw;
+	}
 	return requests::Response_t<Request>(buffer);
 }
 
