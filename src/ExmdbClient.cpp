@@ -12,8 +12,12 @@
 #include <unistd.h>
 
 #include <stdexcept>
+#include <string>
+#include <utility>
 
 #include "constants.h"
+
+using namespace std::string_literals;
 
 namespace exmdbpp
 {
@@ -27,7 +31,11 @@ using namespace constants;
  * @param      message  Error message
  * @param      code     Exmdb response code
  */
-ExmdbError::ExmdbError(const char *message, uint8_t code) : std::runtime_error(message+std::to_string(code)), code(code)
+ExmdbError::ExmdbError(const char *message, uint8_t code) :
+	std::runtime_error(message + " ("s + std::to_string(code) + ")"), code(code)
+{}
+ExmdbError::ExmdbError(std::string &&message, uint8_t code) :
+	std::runtime_error(std::move(message) + " ("s + std::to_string(code) + ")"), code(code)
 {}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -117,6 +125,23 @@ void ExmdbClient::Connection::connect(const std::string& host, const std::string
 		throw std::runtime_error("Connect failed: "+std::string(strerror(error)));
 }
 
+static const char *response_to_str(uint8_t status)
+{
+	switch (status) {
+	case ResponseCode::SUCCESS: return nullptr;
+	case ResponseCode::ACCESS_DENY: return "Access denied";
+	case ResponseCode::MAX_REACHED: return "Server reached maximum number of connections";
+	case ResponseCode::LACK_MEMORY: return "Out of memory";
+	case ResponseCode::MISCONFIG_PREFIX: return "Prefix not served";
+	case ResponseCode::MISCONFIG_MODE: return "Prefix has type mismatch";
+	case ResponseCode::CONNECT_INCOMPLETE: return "No prior CONNECT RPC made";
+	case ResponseCode::PULL_ERROR: return "Invalid request/Server-side deserializing error";
+	case ResponseCode::DISPATCH_ERROR: return "Dispatch error";
+	case ResponseCode::PUSH_ERROR: return "Server-side serialize error";
+	default: return "Unknown error";
+	}
+}
+
 /**
  * @brief      Send request
  *
@@ -137,8 +162,9 @@ void ExmdbClient::Connection::send(IOBuffer& buff)
 	if(bytes < 0)
 		throw std::runtime_error("Receive failed: "+std::string(strerror(errno)));
 	uint8_t status = buff.pop<uint8_t>();
-	if(status != ResponseCode::SUCCESS)
-		throw ExmdbError("Server returned non-zero response code ", status);
+	auto e = response_to_str(status);
+	if(e != nullptr)
+		throw ExmdbError("Server returned non-zero response code: "s + e, status);
 	if(bytes < 5)
 		throw std::runtime_error("Connection closed unexpectedly");
 	uint32_t length = buff.pop<uint32_t>();
