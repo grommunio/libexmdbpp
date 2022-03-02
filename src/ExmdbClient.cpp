@@ -27,7 +27,7 @@ using namespace constants;
  * @param      message  Error message
  * @param      code     Exmdb response code
  */
-ExmdbError::ExmdbError(const std::string& message, uint8_t code) : std::runtime_error(message+std::to_string(code)), code(code)
+ExmdbError::ExmdbError(const char *message, uint8_t code) : std::runtime_error(message+std::to_string(code)), code(code)
 {}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

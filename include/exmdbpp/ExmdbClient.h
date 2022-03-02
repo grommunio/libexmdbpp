@@ -20,7 +20,7 @@ namespace exmdbpp
 class ExmdbError : public std::runtime_error
 {
 public:
-	ExmdbError(const std::string&, uint8_t);
+	ExmdbError(const char *, uint8_t);
 
 	const uint8_t code; ///< Response code returned by the server
 };
