@@ -140,11 +140,13 @@ void ExmdbClient::Connection::send(IOBuffer& buff)
 	bytes = recv(sock, buff.data(), 5, 0);
 	if(bytes < 0)
 		throw std::runtime_error("Receive failed: "+std::string(strerror(errno)));
+	else if(bytes == 0)
+		throw std::runtime_error("Connection closed unexpectedly");
 	uint8_t status = buff.pop<uint8_t>();
 	if(status != ResponseCode::SUCCESS)
 		throw ExmdbError("Server returned non-zero response code ", status);
 	if(bytes < 5)
-		throw std::runtime_error("Connection closed unexpectedly");
+		throw std::runtime_error("Short read");
 	uint32_t length = buff.pop<uint32_t>();
 	buff.reset();
 	buff.resize(length);
