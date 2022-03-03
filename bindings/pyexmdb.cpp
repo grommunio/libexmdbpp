@@ -138,5 +138,8 @@ PYBIND11_MODULE(pyexmdb, m)
 	        .def_readwrite("u64", &TaggedPropval::Value::f)
 	        .def_readwrite("d", &TaggedPropval::Value::d);
 
-	py::register_exception<exmdbpp::ExmdbError>(m, "ExmdbError", PyExc_RuntimeError);
+	auto exmdbError = py::register_exception<exmdbpp::ExmdbError>(m, "ExmdbError", PyExc_RuntimeError);
+	py::register_exception<exmdbpp::ConnectionError>(m, "ConnectionError", exmdbError.ptr());
+	py::register_exception<exmdbpp::ExmdbProtocolError>(m, "ExmdbProtocolError", exmdbError.ptr());
+	py::register_exception<exmdbpp::SerializationError>(m, "SerializationError", exmdbError.ptr());
 }

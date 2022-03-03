@@ -6,9 +6,10 @@
 #include <limits>
 #include <type_traits>
 
-#include "structures.h"
 #include "constants.h"
+#include "exceptions.h"
 #include "IOBufferImpl.h"
+#include "structures.h"
 #include "util.h"
 
 using namespace exmdbpp::constants;
@@ -28,7 +29,7 @@ TaggedPropval::TaggedPropval(IOBuffer& buff)
 	switch(svtype)
 	{
 	default:
-		throw std::runtime_error("Deserialization of type "+std::to_string(type)+" is not supported.");
+		throw SerializationError("Deserialization of type "+std::to_string(type)+" is not supported.");
 	case PropvalType::BYTE:
 		buff >> value.u8; break;
 	case PropvalType::SHORT:
@@ -535,7 +536,7 @@ SizedXID::SizedXID(uint8_t size, const GUID& guid, uint64_t localId) : guid(guid
 void SizedXID::writeXID(IOBuffer& buff) const
 {
 	if(size < 17 || size > 24)
-		throw std::runtime_error("Invalid XID size: "+std::to_string(size));
+		throw SerializationError("Invalid XID size: "+std::to_string(size));
 	buff.push(guid);
 	buff.push_raw(&localId, size-16);
 }
@@ -784,8 +785,8 @@ void Restriction::serialize(IOBuffer& buff) const
 	case Type::AND:
 	case Type::OR: {
 		const std::vector<Restriction>* ress = type == Type::AND? &std::get<size_t(Type::AND)>(res).elements : &std::get<size_t(Type::OR)>(res).elements;
-		if(ress->size() > UINT32_MAX)
-			throw std::runtime_error("Too many sub-restrictions ("+std::to_string(ress->size())+")");
+		if(ress->size() > std::numeric_limits<uint32_t>::max())
+			throw SerializationError("Too many sub-restrictions ("+std::to_string(ress->size())+")");
 		buff.push(uint32_t(ress->size()));
 		for(const Restriction& r : *ress)
 			buff.push(r);
@@ -824,7 +825,7 @@ void Restriction::serialize(IOBuffer& buff) const
 	case Type::COMMENT: {
 		const RComment& r = std::get<size_t(Type::COMMENT)>(res);
 		if(r.propvals.size() == 0 || r.propvals.size() > 255)
-			throw std::runtime_error("Invalid COMMENT restriction propval count "+std::to_string(r.propvals.size()));
+			throw SerializationError("Invalid COMMENT restriction propval count "+std::to_string(r.propvals.size()));
 		buff.push(uint8_t(r.propvals.size()));
 		for(const TaggedPropval& tp : r.propvals)
 			buff.push(tp);
@@ -835,7 +836,7 @@ void Restriction::serialize(IOBuffer& buff) const
 		return buff.push(r.count, *r.subres);
 	}
 	default:
-		throw std::runtime_error("Invalid restriction type "+std::to_string(uint8_t(type)));
+		throw SerializationError("Invalid restriction type "+std::to_string(uint8_t(type)));
 	}
 }
 
@@ -869,7 +870,7 @@ void IOBuffer::Serialize<TaggedPropval>::push(IOBuffer& buff, const TaggedPropva
 	switch(svtype)
 	{
 	default:
-		throw std::runtime_error("Serialization of type "+std::to_string(pv.type)+" is not supported.");
+		throw SerializationError("Serialization of type "+std::to_string(pv.type)+" is not supported.");
 	case PropvalType::BYTE:
 		buff << pv.value.u8; break;
 	case PropvalType::SHORT:
@@ -917,7 +918,7 @@ template<>
 void IOBuffer::Serialize<SizedXID>::push(IOBuffer& buff, const SizedXID& sXID)
 {
 	if(sXID.size < 17 || sXID.size > 24)
-		throw std::runtime_error("Invalid XID size: "+std::to_string(sXID.size));
+		throw SerializationError("Invalid XID size: "+std::to_string(sXID.size));
 	buff.push(sXID.size);
 	sXID.writeXID(buff);
 }

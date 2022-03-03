@@ -31,8 +31,27 @@ const uint8_t ExmdbClient::AUTO_RECONNECT = 1<<0; ///< Automatically reconnect o
  * @param      message  Error message
  * @param      code     Exmdb response code
  */
-ExmdbError::ExmdbError(const std::string& message, uint8_t code) : std::runtime_error(message+std::to_string(code)), code(code)
+ExmdbProtocolError::ExmdbProtocolError(const std::string& message, uint8_t code) :
+    ExmdbError(message+description(code)), code(code)
 {}
+
+std::string ExmdbProtocolError::description(uint8_t code)
+{
+	switch(code)
+	{
+	case ResponseCode::SUCCESS: return "Success.";
+	case ResponseCode::ACCESS_DENY: return "Access denied";
+	case ResponseCode::MAX_REACHED: return "Server reached maximum number of connections";
+	case ResponseCode::LACK_MEMORY: return "Out of memory";
+	case ResponseCode::MISCONFIG_PREFIX: return "Prefix not served";
+	case ResponseCode::MISCONFIG_MODE: return "Prefix has type mismatch";
+	case ResponseCode::CONNECT_INCOMPLETE: return "No prior CONNECT RPC made";
+	case ResponseCode::PULL_ERROR: return "Invalid request/Server-side deserializing error";
+	case ResponseCode::DISPATCH_ERROR: return "Dispatch error";
+	case ResponseCode::PUSH_ERROR: return "Server-side serialize error";
+	default: return "Unknown error code "+std::to_string(code);
+	}
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -96,7 +115,7 @@ void ExmdbClient::Connection::close()
  * @param      host  Server address
  * @param      port  Server port or service
  *
- * @throws     std::runtime_error Connection could not be established
+ * @throws     ConnectionError   Connection could not be established
  */
 void ExmdbClient::Connection::connect(const std::string& host, const std::string& port)
 {
@@ -105,7 +124,7 @@ void ExmdbClient::Connection::connect(const std::string& host, const std::string
 	addrinfo* addrs;
 	int error;
 	if((error = getaddrinfo(host.c_str(), port.c_str(), &aiHint, &addrs)))
-		throw std::runtime_error("Could not resolve address: "+std::string(gai_strerror(error)));
+		throw ConnectionError("Could not resolve address: "+std::string(gai_strerror(error)));
 	for(addrinfo* addr = addrs; addr != nullptr; addr = addr->ai_next)
 	{
 		if((sock = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol))  == -1)
@@ -118,7 +137,7 @@ void ExmdbClient::Connection::connect(const std::string& host, const std::string
 	}
 	freeaddrinfo(addrs);
 	if(sock == -1)
-		throw std::runtime_error("Connect failed: "+std::string(strerror(error)));
+		throw ConnectionError("Connect failed: "+std::string(strerror(error)));
 }
 
 /**
@@ -135,18 +154,18 @@ void ExmdbClient::Connection::send(IOBuffer& buff)
 {
 	ssize_t bytes = ::send(sock, buff.data(), buff.size(), MSG_NOSIGNAL);
 	if(bytes < 0)
-		throw std::runtime_error("Send failed: "+std::string(strerror(errno)));
+		throw ConnectionError("Send failed: "+std::string(strerror(errno)));
 	buff.resize(5);
 	bytes = recv(sock, buff.data(), 5, 0);
 	if(bytes < 0)
-		throw std::runtime_error("Receive failed: "+std::string(strerror(errno)));
+		throw ConnectionError("Receive failed: "+std::string(strerror(errno)));
 	else if(bytes == 0)
-		throw std::runtime_error("Connection closed unexpectedly");
+		throw ConnectionError("Connection closed unexpectedly");
 	uint8_t status = buff.pop<uint8_t>();
 	if(status != ResponseCode::SUCCESS)
-		throw ExmdbError("Server returned non-zero response code ", status);
+		throw ExmdbProtocolError("exmdb call failed: ", status);
 	if(bytes < 5)
-		throw std::runtime_error("Short read");
+		throw ConnectionError("Short read");
 	uint32_t length = buff.pop<uint32_t>();
 	buff.reset();
 	buff.resize(length);
@@ -154,9 +173,9 @@ void ExmdbClient::Connection::send(IOBuffer& buff)
 	{
 		bytes = recv(sock, buff.data()+offset, length-offset, 0);
 		if(bytes < 0)
-			throw std::runtime_error("Message reception failed");
+			throw ConnectionError("Message reception failed");
 		if(bytes == 0)
-			throw std::runtime_error("Connection closed unexpectedly");
+			throw ConnectionError("Connection closed unexpectedly");
 	}
 }
 
