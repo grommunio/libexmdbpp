@@ -10,6 +10,8 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <poll.h>
 
 #include <stdexcept>
 
@@ -122,22 +124,38 @@ void ExmdbClient::Connection::connect(const std::string& host, const std::string
 	if(sock != -1)
 		close();
 	addrinfo* addrs;
-	int error;
+	pollfd fd;
+	fd.events = POLLOUT;
+	int error, res = 0;
 	if((error = getaddrinfo(host.c_str(), port.c_str(), &aiHint, &addrs)))
 		throw ConnectionError("Could not resolve address: "+std::string(gai_strerror(error)));
 	for(addrinfo* addr = addrs; addr != nullptr; addr = addr->ai_next)
 	{
 		if((sock = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol))  == -1)
 			continue;
-		if(::connect(sock, addr->ai_addr, addr->ai_addrlen) == 0)
+		int flags = fcntl(sock, F_GETFL);
+		if(flags < 0)
+		{
+			error = errno;
+			res = -1;
+			continue;
+		}
+		fcntl(sock, F_SETFL, flags | O_NONBLOCK);
+		::connect(sock, addr->ai_addr, addr->ai_addrlen);
+		fd.fd = sock;
+		res = poll(&fd, 1, 3000);
+		if(res == 1)
 			break;
 		error = errno;
 		::close(sock);
 		sock = -1;
 	}
 	freeaddrinfo(addrs);
-	if(sock == -1)
+	if(res == 0)
+		throw ConnectionError("Connect failed: connection timeout");
+	if(res < 0)
 		throw ConnectionError("Connect failed: "+std::string(strerror(error)));
+	fcntl(sock, F_SETFL, fcntl(sock, F_GETFL) & ~O_NONBLOCK);
 }
 
 /**
