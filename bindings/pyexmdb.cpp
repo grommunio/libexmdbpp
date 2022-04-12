@@ -64,8 +64,10 @@ PYBIND11_MODULE(pyexmdb, m)
 	         py::arg("homedir"), py::arg("folderName"))
 	    .def("removeStoreProperties", &ExmdbQueries::removeStoreProperties, release_gil(),
 	         py::arg("homedir"), py::arg("proptags"))
-	    .def("resyncDevice", &ExmdbQueries::resyncDevice, release_gil(),
+	    .def("removeDevice", &ExmdbQueries::removeDevice, release_gil(),
 	         py::arg("homedir"), py::arg("folderName"), py::arg("deviceId"))
+	    .def("resyncDevice", &ExmdbQueries::resyncDevice, release_gil(),
+	         py::arg("homedir"), py::arg("folderName"), py::arg("deviceId"), py::arg("userId"))
 	    .def("setFolderMember",
 	         py::overload_cast<const std::string&, uint64_t, uint64_t, uint32_t, bool>(&ExmdbQueries::setFolderMember),
 	         py::arg("homedir"), py::arg("folderId"), py::arg("ID"), py::arg("rights"), py::arg("remove")=false,

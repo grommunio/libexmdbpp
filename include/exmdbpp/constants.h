@@ -35,6 +35,7 @@ static const uint8_t GET_FOLDER_PROPERTIES = 0x17;
 static const uint8_t SET_FOLDER_PROPERTIES = 0x18;
 static const uint8_t DELETE_FOLDER = 0x1a;
 static const uint8_t EMPTY_FOLDER = 0x1b;
+static const uint8_t DELETE_MESSAGES = 0x23;
 static const uint8_t LOAD_HIERARCHY_TABLE = 0x26;
 static const uint8_t LOAD_CONTENT_TABLE = 0x28;
 static const uint8_t LOAD_PERMISSION_TABLE = 0x29;

@@ -388,6 +388,34 @@ struct response_map<DeleteFolderRequest::callId>
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
+ * @brief   Delete messages
+ *
+ * @param   string      homedir
+ * @param   uint32_t    accountId
+ * @param   uint32_t    cpid
+ * @param   string      username
+ * @param   uint64_t    folderId
+ * @param   uint64_t[]  messageIds
+ * @param   bool        hard
+ *
+ * @return  Response<EmptyFolderRequest::callId>
+ */
+struct DeleteMessagesRequest : public Request<constants::CallId::DELETE_MESSAGES,
+        uint32_t, uint32_t, const std::string&, uint64_t, Collection<uint32_t, uint64_t>, bool>
+{};
+
+
+template<>
+struct Response<DeleteMessagesRequest::callId>
+{
+	explicit Response(IOBuffer&);
+
+	bool partial; ///< Whether deletion was incomplete
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+/**
  * @brief   Empty a folder
  *
  * @param   string      homedir
@@ -752,7 +780,7 @@ struct response_map<LoadPermissionTableRequest::callId>
  * @param   string      homedir
  * @param   uint64_t    folderId
  *
- * @return  Response<QueryTableRequest::callId>
+ * @return  Response<QueryFolderMessagesRequest::callId>
  */
 struct QueryFolderMessagesRequest : public Request<constants::CallId::QUERY_FOLDER_MESSAGES,
         uint64_t>

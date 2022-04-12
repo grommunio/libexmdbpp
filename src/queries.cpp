@@ -462,20 +462,54 @@ ExmdbQueries::SyncData ExmdbQueries::getSyncData(const std::string& homedir, con
 }
 
 /**
- * @brief       Initiate device resync
+ * @brief       Remove device
  *
- * Deletes the device sync folder, causing the device to re-sync.
+ * Deletes the device sync folder.
+ * If the device is still active, this results in a re-sync of the device.
  *
  * @param       homedir     Home directory path of the user
  * @param       folderName  Name of the folder containing sync data
  * @param       deviceId    Device ID string
  */
-void ExmdbQueries::resyncDevice(const std::string& homedir, const std::string& folderName, const std::string& deviceId)
+void ExmdbQueries::removeDevice(const std::string& homedir, const std::string& folderName, const std::string& deviceId)
 {
 	uint64_t rootFolderId = util::makeEidEx(1, PublicFid::ROOT);
 	auto syncFolder = send<GetFolderByNameRequest>(homedir, rootFolderId, folderName);
 	auto deviceFolder = send<GetFolderByNameRequest>(homedir, syncFolder.folderId, deviceId);
 	send<EmptyFolderRequest>(homedir, 0, "", deviceFolder.folderId, true, false, true, false);
+	send<DeleteFolderRequest>(homedir, 0, deviceFolder.folderId, true);
+}
+
+/**
+ * @brief        Resync device
+ *
+ * Deletes all sync states but keeps the device data.
+ *
+ * @param       homedir     Home directory path of the user
+ * @param       folderName  Name of the folder containing sync data
+ * @param       deviceId    Device ID string
+ * @param       userId      (MySQL) ID of the user
+ *
+ * @return      true if deletion was successful, false if only part of the states was deleted
+ */
+bool ExmdbQueries::resyncDevice(const std::string& homedir, const std::string& folderName, const std::string& deviceId,
+                                uint32_t userId)
+{
+	static const Restriction noDD = Restriction::PROPERTY(Restriction::NE, 0, TaggedPropval(PropTag::DISPLAYNAME, "devicedata"));
+	static const uint32_t midTag[] = {PropTag::MID};
+	uint64_t rootFolderId = util::makeEidEx(1, PublicFid::ROOT);
+	auto syncFolder = send<GetFolderByNameRequest>(homedir, rootFolderId, folderName);
+	auto deviceFolder = send<GetFolderByNameRequest>(homedir, syncFolder.folderId, deviceId);
+	auto content = send<LoadContentTableRequest>(homedir, 0, deviceFolder.folderId, "", 2, noDD);
+	auto table = send<QueryTableRequest>(homedir, "", 0, content.tableId, midTag, 0, content.rowCount);
+	send<UnloadTableRequest>(homedir, content.tableId);
+	std::vector<uint64_t> mids;
+	mids.reserve(table.entries.size());
+	for(const auto& row : table.entries)
+		for(const auto& tag : row)
+			if(tag.tag == PropTag::MID)
+				mids.emplace_back(tag.value.u64);
+	return !send<DeleteMessagesRequest>(homedir, userId, 0, "", deviceFolder.folderId, mids, true).partial;
 }
 
 }
