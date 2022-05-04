@@ -26,6 +26,7 @@ struct Folder
 	Folder(const requests::PropvalResponse&);
 
 	uint64_t folderId = 0;
+	uint64_t parentId = 0;
 	std::string displayName;
 	std::string comment;
 	uint64_t creationTime = 0;
@@ -96,12 +97,15 @@ public:
 
 	uint64_t createFolder(const std::string&, uint32_t, const std::string&, const std::string&, const std::string&);
 	bool deleteFolder(const std::string&, uint64_t, bool=false);
+	PropvalTable findFolder(const std::string&, const std::string&, uint64_t=0, bool=true, uint32_t fuuz=0,
+	                        const std::vector<uint32_t>& = defaultFolderProps);
 	ProptagList getAllStoreProperties(const std::string&);
 	PropvalTable getFolderList(const std::string&, const std::vector<uint32_t>& = defaultFolderProps);
 	PropvalTable getFolderMemberList(const std::string&, uint64_t);
 	PropvalList getFolderProperties(const std::string&, uint32_t, uint64_t, const std::vector<uint32_t>& = defaultFolderProps);
 	SyncData getSyncData(const std::string&, const std::string&);
 	PropvalList getStoreProperties(const std::string&, uint32_t, const std::vector<uint32_t>&);
+	PropvalTable listFolders(const std::string&, uint64_t, bool=false, const std::vector<uint32_t>& = defaultFolderProps);
 	void removeStoreProperties(const std::string&, const std::vector<uint32_t>&);
 	void removeDevice(const std::string&, const std::string&, const std::string&);
 	bool resyncDevice(const std::string&, const std::string&, const std::string&, uint32_t);

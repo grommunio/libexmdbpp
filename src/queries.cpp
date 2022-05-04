@@ -20,7 +20,8 @@ namespace exmdbpp::queries
 {
 
 const std::vector<uint32_t> ExmdbQueries::defaultFolderProps =
-{PropTag::FOLDERID, PropTag::DISPLAYNAME, PropTag::COMMENT, PropTag::CREATIONTIME, PropTag::CONTAINERCLASS};
+{PropTag::FOLDERID, PropTag::DISPLAYNAME, PropTag::COMMENT, PropTag::CREATIONTIME, PropTag::CONTAINERCLASS,
+ PropTag::PARENTFOLDERID};
 
 const uint32_t ExmdbQueries::ownerRights = 0x000007fb;
 
@@ -62,6 +63,8 @@ void Folder::init(const std::vector<structures::TaggedPropval>& propvals)
 			creationTime = tp.value.u64; break;
 		case PropTag::CONTAINERCLASS:
 			container = tp.value.str; break;
+		case PropTag::PARENTFOLDERID:
+			parentId = tp.value.u64; break;
 		}
 	}
 }
@@ -136,6 +139,29 @@ bool FolderMemberList::Member::special() const
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
+ * @brief      Find folder with given name
+ *
+ * @param      homedir      Home directory path of the store
+ * @param      name         Name to search for
+ * @param      parent       Parent folder ID
+ * @param      recursive    Whether to search sub-folders
+ * @param      fuzzyLevel   FuzzyLevel to use for matching
+ * @param      proptags     Tags to return
+ *
+ * @return     Search results (table of tagged propvals, can be converted to FolderList for easier access)
+ */
+ExmdbQueries::PropvalTable ExmdbQueries::findFolder(const std::string& homedir, const std::string& name, uint64_t parent,
+                                                    bool recursive, uint32_t fuzzyLevel, const std::vector<uint32_t>& proptags)
+{
+	parent = parent? parent: util::makeEidEx(1, PrivateFid::ROOT);
+	Restriction res = Restriction::CONTENT(fuzzyLevel, 0, TaggedPropval(PropTag::DISPLAYNAME, name));
+	auto lhtResponse = send<LoadHierarchyTableRequest>(homedir, parent, "", recursive? TableFlags::DEPTH : 0, res);
+	auto qtResponse = send<QueryTableRequest>(homedir, "", 0, lhtResponse.tableId, proptags, 0, lhtResponse.rowCount);
+	send<UnloadTableRequest>(homedir, lhtResponse.tableId);
+	return std::move(qtResponse.entries);
+}
+
+/**
  * @brief      Retrieve public folder list
  *
  * Provides a higher level protocol implementation for retrieving
@@ -147,9 +173,20 @@ bool FolderMemberList::Member::special() const
  * @return     Table of tagged propvals. Can be converted to FolderList for easier access.
  */
 ExmdbQueries::PropvalTable ExmdbQueries::getFolderList(const std::string& homedir, const std::vector<uint32_t>& proptags)
+{return listFolders(homedir, util::makeEidEx(1, PublicFid::IPMSUBTREE), false, proptags);}
+
+/**
+ * @brief      List sub-folders of a given folder
+ *
+ * @param      homedir  Home directory path of the domain
+ * @param      proptags Tags to return
+ *
+ * @return     Table of tagged propvals. Can be converted to FolderList for easier access.
+ */
+ExmdbQueries::PropvalTable ExmdbQueries::listFolders(const std::string& homedir, uint64_t parent, bool recursive,
+                                                     const std::vector<uint32_t>& proptags)
 {
-	uint64_t folderId = util::makeEidEx(1, PublicFid::IPMSUBTREE);
-	auto lhtResponse = send<LoadHierarchyTableRequest>(homedir, folderId, "", 0);
+	auto lhtResponse = send<LoadHierarchyTableRequest>(homedir, parent, "", recursive? TableFlags::DEPTH : 0);
 	auto qtResponse = send<QueryTableRequest>(homedir, "", 0, lhtResponse.tableId, proptags, 0, lhtResponse.rowCount);
 	send<UnloadTableRequest>(homedir, lhtResponse.tableId);
 	return std::move(qtResponse.entries);
@@ -260,6 +297,8 @@ uint32_t ExmdbQueries::setFolderMember(const std::string& homedir, uint64_t fold
  * @param      username  Username to add to list
  * @param      rights    Bitmask of member rights
  * @param      remove    Remove rights instead of adding them
+ *
+ * @return     New rights value
  */
 uint32_t ExmdbQueries::setFolderMember(const std::string& homedir, uint64_t folderId, const std::string& username,
                                        uint32_t rights, bool remove)
@@ -280,6 +319,8 @@ uint32_t ExmdbQueries::setFolderMember(const std::string& homedir, uint64_t fold
  * @param      ID        ID of the member
  * @param      rights    Bitmask of member rights
  * @param      remove    Remove rights instead of adding them
+ *
+ * @return     New rights value
  */
 uint32_t ExmdbQueries::setFolderMember(const std::string& homedir, uint64_t folderId, uint64_t ID,
                                        uint32_t rights, bool remove)

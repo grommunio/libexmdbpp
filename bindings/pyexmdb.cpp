@@ -50,6 +50,9 @@ PYBIND11_MODULE(pyexmdb, m)
 	         py::arg("homedir"), py::arg("domainId"), py::arg("folderName"), py::arg("container"), py::arg("comment"))
 	    .def("deleteFolder", &ExmdbQueries::deleteFolder, release_gil(),
 	        py::arg("homedir"), py::arg("folderId"), py::arg("clear")=false)
+	    .def("findFolder", &ExmdbQueries::findFolder, release_gil(),
+	         py::arg("homedir"), py::arg("name"), py::arg("folderId")=0, py::arg("recursive")=true, py::arg("fuzzyLevel")=0,
+	         py::arg("proptags") = ExmdbQueries::defaultFolderProps)
 	    .def("getAllStoreProperties", &ExmdbQueries::getAllStoreProperties,  release_gil(),
 	         py::arg("homedir"))
 	    .def("getFolderList", &ExmdbQueries::getFolderList, release_gil(),
@@ -62,6 +65,9 @@ PYBIND11_MODULE(pyexmdb, m)
 	         py::arg("homedir"), py::arg("cpid"), py::arg("proptags"))
 	    .def("getSyncData", &ExmdbQueries::getSyncData, release_gil(),
 	         py::arg("homedir"), py::arg("folderName"))
+	    .def("listFolders", &ExmdbQueries::listFolders, release_gil(),
+	         py::arg("homedir"), py::arg("folderId"), py::arg("recursive")=false,
+	         py::arg("proptags") = ExmdbQueries::defaultFolderProps)
 	    .def("removeStoreProperties", &ExmdbQueries::removeStoreProperties, release_gil(),
 	         py::arg("homedir"), py::arg("proptags"))
 	    .def("removeDevice", &ExmdbQueries::removeDevice, release_gil(),
@@ -93,6 +99,7 @@ PYBIND11_MODULE(pyexmdb, m)
 	        .def_readwrite("comment", &Folder::comment)
 	        .def_readwrite("creationTime", &Folder::creationTime)
 	        .def_readwrite("container", &Folder::container)
+	        .def_readwrite("parentId", &Folder::parentId)
 	        .def("__repr__", &Folder_repr);
 
 	py::class_<FolderList>(m, "FolderList")

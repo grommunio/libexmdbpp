@@ -123,6 +123,18 @@ static const uint32_t GENERIC = 0x1;
 static const uint32_t SEARCH = 0x2;
 }
 
+namespace FuzzyLevel
+{
+static const uint32_t FULLSTRING = 0x0;
+static const uint32_t SUBSTRING = 0x1;
+static const uint32_t PREFIX = 0x2;
+static const uint32_t PREFIX_ON_ANY_WORD = 1<<4;
+static const uint32_t PHRASE_MATCH = 1<<5;
+static const uint32_t IGNORECASE = 1<<16;
+static const uint32_t IGNORENONSPACE = 1<<17;
+static const uint32_t LOOSE = 1<<18;
+}
+
 namespace TableFlags
 {
 static const uint8_t ASSOCIATED = 0x2;
