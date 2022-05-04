@@ -440,7 +440,7 @@ uint32_t TaggedPropval::binaryLength() const
  * @return
  */
 const void* TaggedPropval::binaryData() const
-{return type == PropvalType::BINARY && value.u8? static_cast<const void*>(value.a8+sizeof(uint32_t)) : nullptr;}
+{return type == PropvalType::BINARY && value.a8? static_cast<const void*>(value.a8+sizeof(uint32_t)) : nullptr;}
 
 /**
  * @brief      Copy string to internal buffer
