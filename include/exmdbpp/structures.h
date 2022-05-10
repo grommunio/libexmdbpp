@@ -18,6 +18,22 @@ namespace exmdbpp::structures
 class TaggedPropval
 {
 public:
+	template<typename T>
+	struct VArray : public std::pair<T*, T*>
+	{
+		using std::pair<T*, T*>::pair;
+		constexpr VArray(T* ptr, uint32_t count) : std::pair<T*, T*>(ptr, ptr+count) {}
+
+		constexpr uint32_t count() const
+		{return this->second-this->first;}
+
+		constexpr T* begin() const
+		{return this->first;}
+
+		constexpr T* end() const
+		{return this->second;}
+	};
+
 	TaggedPropval() = default;
 	explicit TaggedPropval(IOBuffer&);
 	TaggedPropval(const TaggedPropval&);
@@ -31,9 +47,14 @@ public:
 	TaggedPropval(uint32_t, float);
 	TaggedPropval(uint32_t, double);
 	TaggedPropval(uint32_t, const char*, bool=true);
-	TaggedPropval(uint32_t, const void*, bool=true);
-	TaggedPropval(uint32_t, const void*, uint32_t);
+	TaggedPropval(uint32_t, const void*, uint32_t, bool=true);
 	TaggedPropval(uint32_t, const std::string&, bool=true);
+	TaggedPropval(uint32_t, const uint16_t*, uint32_t, bool=true);
+	TaggedPropval(uint32_t, const uint32_t*, uint32_t, bool=true);
+	TaggedPropval(uint32_t, const uint64_t*, uint32_t, bool=true);
+	TaggedPropval(uint32_t, const float*, uint32_t, bool=true);
+	TaggedPropval(uint32_t, const double*, uint32_t, bool=true);
+	TaggedPropval(uint32_t, const char**, uint32_t, bool=true);
 
 	TaggedPropval& operator=(const TaggedPropval&);
 	TaggedPropval& operator=(TaggedPropval&&) noexcept;
@@ -43,6 +64,8 @@ public:
 	uint32_t binaryLength() const;
 	const void* binaryData() const;
 
+	uint32_t count() const;
+
 	const char* typeName() const;
 	static const char* typeName(uint16_t);
 
@@ -51,23 +74,35 @@ public:
 
 	union Value
 	{
-		uint8_t u8, *a8;
-		uint16_t u16, *a16;
-		uint32_t u32, *a32;
-		uint64_t u64, *a64;
+		uint8_t u8;
+		uint16_t u16;
+		uint32_t u32;
+		uint64_t u64;
 		float f;
 		double d;
 		char* str;
-		uint16_t* wstr;
-		void* ptr = nullptr;
+		VArray<uint8_t> data;
+		VArray<uint16_t> a16;
+		VArray<uint32_t> a32;
+		VArray<uint64_t> a64;
+		VArray<float> af;
+		VArray<double> ad;
+		VArray<char*> astr;
+		VArray<VArray<uint8_t>> adata;
+
+		constexpr Value() : data(nullptr, nullptr) {}
+		constexpr Value(const Value& v) : data(v.data) {}
+
+		Value& operator=(const Value&);
+		void zero();
 	} value; ///< Data contained by the tag
 
 private:
 	bool owned = true; ///< Whether the memory stored in pointer values is owned (automatically deallocated in destructor)
 
-	void copyStr(const char*);
+	char* copyStr(const char*);
 	void copyValue(const TaggedPropval&);
-	void copyData(const void*, uint32_t len, bool=false);
+	void copyData(const void*, uint32_t, size_t=alignof(uint8_t));
 	void free();
 };
 

@@ -40,6 +40,13 @@ std::string FolderList_repr(const FolderList& fl)
 ///////////////////////////////////////////////////////////////////////////////
 // Wrappers for TaggedPropvals
 
+static char* copyStr(const char* str)
+{
+	char* copy = new char[strlen(str)+1];
+	strcpy(copy, str);
+	return copy;
+}
+
 TaggedPropval TaggedPropval_init(uint32_t tag, const py::object& value) try
 {
 	switch(PropvalType::tagType(tag))
@@ -63,11 +70,57 @@ TaggedPropval TaggedPropval_init(uint32_t tag, const py::object& value) try
 	case PropvalType::STRING:
 	case PropvalType::WSTRING:
 		return TaggedPropval(tag, value.cast<std::string>());
-	case PropvalType::BINARY:
+	case PropvalType::BINARY: {
 		std::string content = value.cast<std::string>();
 		return TaggedPropval(tag, static_cast<const void*>(content.c_str()), uint32_t(content.size()));
 	}
-	throw py::value_error("Usupported tag type");
+	}
+	if(!py::isinstance<py::list>(value))
+		throw py::type_error("Cannot store value of type "+std::string(py::str(value.get_type()))+" in "+TaggedPropval::typeName(tag&0xFFFF)+" tag.");
+	py::list list = value.cast<py::list>();
+	switch(PropvalType::tagType(tag))
+	{
+	case PropvalType::SHORT_ARRAY: {
+		TaggedPropval tp(tag, static_cast<uint16_t*>(nullptr), uint32_t(list.size()));
+		for(uint32_t i = 0; i < list.size(); ++i)
+			tp.value.a16.first[i] = list[i].cast<uint16_t>();
+		return tp;
+	}
+	case PropvalType::LONG_ARRAY: {
+		TaggedPropval tp(tag, static_cast<uint32_t*>(nullptr), uint32_t(list.size()));
+		for(uint32_t i = 0; i < list.size(); ++i)
+			tp.value.a32.first[i] = list[i].cast<uint32_t>();
+		return tp;
+	}
+	case PropvalType::LONGLONG_ARRAY:
+	case PropvalType::CURRENCY_ARRAY: {
+		TaggedPropval tp(tag, static_cast<uint64_t*>(nullptr), uint32_t(list.size()));
+		for(uint32_t i = 0; i < list.size(); ++i)
+			tp.value.a64.first[i] = list[i].cast<uint64_t>();
+		return tp;
+	}
+	case PropvalType::FLOAT_ARRAY: {
+		TaggedPropval tp(tag, static_cast<float*>(nullptr), uint32_t(list.size()));
+		for(uint32_t i = 0; i < list.size(); ++i)
+			tp.value.af.first[i] = list[i].cast<float>();
+		return tp;
+	}
+	case PropvalType::DOUBLE_ARRAY:
+	case PropvalType::FLOATINGTIME_ARRAY: {
+		TaggedPropval tp(tag, static_cast<double*>(nullptr), uint32_t(list.size()));
+		for(uint32_t i = 0; i < list.size(); ++i)
+			tp.value.ad.first[i] = list[i].cast<double>();
+		return tp;
+	}
+	case PropvalType::STRING_ARRAY:
+	case PropvalType::WSTRING_ARRAY: {
+		TaggedPropval tp(tag, static_cast<const char**>(nullptr), uint32_t(list.size()));
+		for(uint32_t i = 0; i < list.size(); ++i)
+			tp.value.astr.first[i] = copyStr(list[i].cast<std::string>().c_str());
+		return tp;
+	}
+	}
+	throw py::value_error("Unsupported tag type");
 } catch (const py::cast_error&)
 {
 	std::string pytype = py::str(value.get_type());
@@ -100,6 +153,51 @@ py::object TaggedPropval_getValue(const TaggedPropval& tp)
 		return py::cast(tp.value.str);
 	case PropvalType::BINARY:
 		return py::object(py::bytes(reinterpret_cast<const char*>(tp.binaryData()), tp.binaryLength()));
+	case PropvalType::SHORT_ARRAY: {
+		py::list list(tp.count());
+		for(uint32_t i = 0; i < tp.count(); ++i)
+			list[i] = py::cast(tp.value.a16.first[i]);
+		return list;
+	}
+	case PropvalType::LONG_ARRAY: {
+		py::list list(tp.count());
+		for(uint32_t i = 0; i < tp.count(); ++i)
+			list[i] = py::cast(tp.value.a32.first[i]);
+		return list;
+	}
+	case PropvalType::LONGLONG_ARRAY:
+	case PropvalType::CURRENCY_ARRAY: {
+		py::list list(tp.count());
+		for(uint32_t i = 0; i < tp.count(); ++i)
+			list[i] = py::cast(tp.value.a64.first[i]);
+		return list;
+	}
+	case PropvalType::FLOAT_ARRAY: {
+		py::list list(tp.count());
+		for(uint32_t i = 0; i < tp.count(); ++i)
+			list[i] = py::cast(tp.value.af.first[i]);
+		return list;
+	}
+	case PropvalType::DOUBLE_ARRAY:
+	case PropvalType::FLOATINGTIME_ARRAY: {
+		py::list list(tp.count());
+		for(uint32_t i = 0; i < tp.count(); ++i)
+			list[i] = py::cast(tp.value.ad.first[i]);
+		return list;
+	}
+	case PropvalType::STRING_ARRAY:
+	case PropvalType::WSTRING_ARRAY: {
+		py::list list(tp.count());
+		for(uint32_t i = 0; i < tp.count(); ++i)
+			list[i] = py::cast(tp.value.astr.first[i]);
+		return list;
+	}
+	case PropvalType::BINARY_ARRAY: {
+		py::list list(tp.count());
+		for(uint32_t i = 0; i < tp.count(); ++i)
+			list[i] = py::bytes(reinterpret_cast<const char*>(tp.binaryData()), tp.binaryLength());
+		return list;
+	}
 	}
 	return py::none();
 }
@@ -126,12 +224,20 @@ void TaggedPropval_setValue(TaggedPropval& tp, const py::object& value) try
 		tp.value.d = value.cast<double>(); return;
 	case PropvalType::STRING:
 	case PropvalType::WSTRING:
-		tp = TaggedPropval(tp.tag, value.cast<std::string>()); return;
 	case PropvalType::BINARY:
-		std::string content = value.cast<std::string>();
-		tp = TaggedPropval(tp.tag, static_cast<const void*>(content.c_str()), uint32_t(content.size()));
+	case PropvalType::SHORT_ARRAY:
+	case PropvalType::LONG_ARRAY:
+	case PropvalType::LONGLONG_ARRAY:
+	case PropvalType::CURRENCY_ARRAY:
+	case PropvalType::FLOAT_ARRAY:
+	case PropvalType::DOUBLE_ARRAY:
+	case PropvalType::FLOATINGTIME_ARRAY:
+	case PropvalType::STRING_ARRAY:
+	case PropvalType::WSTRING_ARRAY:
+	//case PropvalType::BINARY_ARRAY: //No write support yet
+		tp = TaggedPropval_init(tp.tag, value); return; //Do not bother to modify in-place, just make a new one
 	}
-	throw py::type_error("Tag type not supported");
+	throw py::type_error("Tag type not supported for writing");
 } catch(const py::cast_error&)
 {
 	std::string pytype = py::str(value.get_type());
@@ -195,7 +301,6 @@ PYBIND11_MODULE(pyexmdb, m)
 	         py::arg("homedir"), py::arg("cpid"), py::arg("propvals"))
 	    .def("unloadStore", &ExmdbQueries::unloadStore, release_gil(),
 	         py::arg("homedir"));
-
 	py::class_<Folder>(m, "Folder")
 	        .def(py::init())
 	        .def(py::init<ExmdbQueries::PropvalList>(), py::arg("propvalList"))

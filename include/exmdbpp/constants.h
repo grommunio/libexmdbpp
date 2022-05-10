@@ -183,6 +183,8 @@ static const uint16_t BINARY_ARRAY = 0x1102;
 constexpr uint16_t tagType(uint32_t tag)
 {return tag & 0xFFFF;}
 
+constexpr bool isArray(uint16_t type)
+{return type == BINARY || type & 0x1000;}
 }
 
 namespace PropTag

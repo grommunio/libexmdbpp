@@ -3,6 +3,7 @@
  * SPDX-FileCopyrightText: 2020-2021 grommunio GmbH
  */
 #include <cstring>
+#include <cstddef>
 #include <limits>
 #include <type_traits>
 
@@ -16,17 +17,27 @@ using namespace exmdbpp::constants;
 
 namespace exmdbpp::structures
 {
+void TaggedPropval::Value::zero()
+{data.first = data.second = nullptr;}
+
+TaggedPropval::Value& TaggedPropval::Value::operator=(const Value& v)
+{
+	data = v.data;
+	return *this;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 /**
  * @brief      Deserialize PropTag from buffer
  *
  * @param      buff  Buffer containing serialized PropTag
  */
-TaggedPropval::TaggedPropval(IOBuffer& buff)
+TaggedPropval::TaggedPropval(IOBuffer& buff) : value()
 {
 	tag = buff.pop<uint32_t>();
 	type = tag == PropvalType::UNSPECIFIED? buff.pop<uint16_t>() : tag&0xFFFF;
-	uint16_t svtype = (type&0x3000) == 0x3000? type & ~0x3000 : type;
-	switch(svtype)
+	switch(type)
 	{
 	default:
 		throw SerializationError("Deserialization of type "+std::to_string(type)+" is not supported.");
@@ -47,114 +58,130 @@ TaggedPropval::TaggedPropval(IOBuffer& buff)
 	case PropvalType::FLOATINGTIME:
 		buff >> value.d; break;
 	case PropvalType::STRING:
-	case PropvalType::WSTRING: {
-		const char* str = buff.pop<const char*>();
-		size_t len = strlen(str);
-		value.str = new char[len+1];
-		strcpy(value.str, str);
-		break;
-	}
-	case PropvalType::BINARY: {
-		uint32_t len = buff.pop<uint32_t>();
-		copyData(buff.pop_raw(len), len, true);
-		break;
-	}
-	//Currently unusable types, skip data entirely
+	case PropvalType::WSTRING:
+		value.str = copyStr(buff.pop<const char*>()); break;
+	case PropvalType::BINARY:
+		buff >> value.data; break;
 	case PropvalType::SHORT_ARRAY:
-		buff.pop_raw(buff.pop<uint32_t>()*2); break;
+		buff >> value.a16; break;
 	case PropvalType::LONG_ARRAY:
-	case PropvalType::FLOAT_ARRAY:
-		buff.pop_raw(buff.pop<uint32_t>()*4); break;
+		buff >> value.a32; break;
 	case PropvalType::LONGLONG_ARRAY:
-	case PropvalType::DOUBLE_ARRAY:
 	case PropvalType::CURRENCY_ARRAY:
+		buff >> value.a64; break;
+	case PropvalType::FLOAT_ARRAY:
+		buff >> value.af; break;
+	case PropvalType::DOUBLE_ARRAY:
 	case PropvalType::FLOATINGTIME_ARRAY:
-		buff.pop_raw(buff.pop<uint32_t>()*8); break;
-	case PropvalType::STRING_ARRAY: {
-		uint32_t count = buff.pop<uint32_t>();
-		for(uint32_t i = 0; i < count; ++i)
-			buff.pop<const char*>();
+		buff >> value.ad; break;
+	case PropvalType::STRING_ARRAY:
+	case PropvalType::WSTRING_ARRAY:
+		buff >> value.astr;
+		for(char*& str : value.astr)
+		{
+			const char* temp = buff.pop<const char*>();
+			size_t len = strlen(temp);
+			str = new char[len+1];
+			strcpy(str, temp);
+		}
 		break;
-	}
-	case PropvalType::BINARY_ARRAY: {
-		uint32_t count = buff.pop<uint32_t>();
-		for(uint32_t i = 0; i < count; ++i)
-			buff.pop_raw(buff.pop<uint32_t>());
-		break;
-	}
+	case PropvalType::BINARY_ARRAY:
+		buff >> value.adata; break;
 	}
 }
 
 /**
  * @brief      Initialize tagged property value (8 bit unsigned)
  *
- * No type check is performed to ensure the tag type actually matches 8 bit unsigned.
- *
  * @param      tag        Tag identifier
  * @param      val        Tag value
+ *
+ * @throw      std::invalid_argument     The tag type does not match 8 bit unsigned
  */
 TaggedPropval::TaggedPropval(uint32_t tag, uint8_t val) : tag(tag), type(tag&0xFFFF)
-{value.u8 = val;}
+{
+	if(type != PropvalType::BYTE)
+		throw std::invalid_argument(std::string("Cannot construct ")+typeName()+" tag from uint8_t");
+	value.u8 = val;
+}
 
 /**
  * @brief      Initialize tagged property value (16 bit unsigned)
  *
- * No type check is performed to ensure the tag type actually matches 16 bit unsigned.
- *
  * @param      tag        Tag identifier
  * @param      val        Tag value
+ *
+ * @throw      std::invalid_argument     The tag type does not match 16 bit unsigned
  */
 TaggedPropval::TaggedPropval(uint32_t tag, uint16_t val) : tag(tag), type(tag&0xFFFF)
-{value.u16 = val;}
+{
+	if(type != PropvalType::SHORT)
+		throw std::invalid_argument(std::string("Cannot construct ")+typeName()+" tag from uint16_t");
+	value.u16 = val;
+}
 
 /**
  * @brief      Initialize tagged property value (32 bit unsigned)
  *
- * No type check is performed to ensure the tag type actually matches 32 bit unsigned.
- *
  * @param      tag        Tag identifier
  * @param      val        Tag value
+ *
+ * @throw      std::invalid_argument     The tag type does not match 32 bit unsigned
  */
 TaggedPropval::TaggedPropval(uint32_t tag, uint32_t val) : tag(tag), type(tag&0xFFFF)
-{value.u32 = val;}
+{
+	if(type != PropvalType::LONG && type != PropvalType::ERROR)
+		throw std::invalid_argument(std::string("Cannot construct ")+typeName()+" tag from uint32_t");
+	value.u32 = val;
+}
 
 /**
  * @brief      Initialize tagged property value (64 bit unsigned)
  *
- * No type check is performed to ensure the tag type actually matches 64 bit unsigned.
- *
  * @param      tag        Tag identifier
  * @param      val        Tag value
+ *
+ * @throw      std::invalid_argument     The tag type does not match 64 bit unsigned
  */
 TaggedPropval::TaggedPropval(uint32_t tag, uint64_t val) : tag(tag), type(tag&0xFFFF)
-{value.u64 = val;}
+{
+	if(type != PropvalType::LONGLONG && type != PropvalType::CURRENCY && type != PropvalType::FILETIME)
+		throw std::invalid_argument(std::string("Cannot construct ")+typeName()+" tag from uint64_t");
+	value.u64 = val;
+}
 
 /**
  * @brief      Initialize tagged property value (32 bit floating point)
  *
- * No type check is performed to ensure the tag type actually matches 32 bit floating point.
- *
  * @param      tag        Tag identifier
  * @param      val        Tag value
+ *
+ * @throw      std::invalid_argument     The tag type does not match 32 bit float
  */
 TaggedPropval::TaggedPropval(uint32_t tag, float val) : tag(tag), type(tag&0xFFFF)
-{value.f = val;}
+{
+	if(type != PropvalType::FLOAT)
+		throw std::invalid_argument(std::string("Cannot construct ")+typeName()+" tag from float");
+	value.f = val;
+}
 
 /**
  * @brief      Initialize tagged property value (64 bit floating point)
  *
- * No type check is performed to ensure the tag type actually matches 64 bit floating point.
- *
  * @param      tag        Tag identifier
  * @param      val        Tag value
+ *
+ * @throw      std::invalid_argument     The tag type does not match 64 bit float
  */
 TaggedPropval::TaggedPropval(uint32_t tag, double val) : tag(tag), type(tag&0xFFFF)
-{value.d = val;}
+{
+	if(type != PropvalType::DOUBLE && type != PropvalType::FLOATINGTIME)
+		throw std::invalid_argument(std::string("Cannot construct ")+typeName()+" tag from double");
+	value.d = val;
+}
 
 /**
  * @brief      Initialize tagged property value (C string)
- *
- * No type check is performed to ensure the tag type actually matches a string type.
  *
  * If copy is set to true, the data is copied to an internally managed buffer,
  * otherwise only the pointer to the data is stored.
@@ -162,48 +189,21 @@ TaggedPropval::TaggedPropval(uint32_t tag, double val) : tag(tag), type(tag&0xFF
  * @param      tag   Tag identifier
  * @param      val   Tag value
  * @param      copy  Whether to copy data
+ *
+ * @throw      std::invalid_argument     The tag type does not match string
  */
 TaggedPropval::TaggedPropval(uint32_t tag, const char* val, bool copy) : tag(tag), type(tag&0xFFFF), owned(copy)
 {
+	if(type != PropvalType::STRING && type != PropvalType::WSTRING)
+		throw std::invalid_argument(std::string("Cannot construct ")+typeName()+" tag from char*");
 	if(copy)
-		copyStr(val);
+		value.str = copyStr(val);
 	else
 		value.str = const_cast<char*>(val);
 }
 
 /**
  * @brief      Initialize tagged property value (binary)
- *
- * No type check is performed to ensure the tag type actually matches a binary type.
- *
- * Serialization expects the first 4 bytes of the data to contain a little endian
- * unsigned 32 bit integer with length information about the following data.
- *
- * If copy is set to true, the data is copied to an internally managed buffer,
- * otherwise only the pointer to the data is stored.
- *
- * @param      tag   Tag identifier
- * @param      val   Tag value
- * @param      copy  Whether to copy data
- */
-TaggedPropval::TaggedPropval(uint32_t tag, const void* val, bool copy) : tag(tag), type(tag&0xFFFF), owned(copy)
-{
-	if(copy)
-	{
-		uint32_t len;
-		memcpy(&len, val, sizeof(uint32_t));
-		len = le32toh(len);
-		copyData(val, len);
-	}
-	else
-		value.ptr = const_cast<void*>(val);
-}
-
-
-/**
- * @brief      Initialize tagged property value (binary)
- *
- * No type check is performed to ensure the tag type actually matches a binary type.
  *
  * Serialization expects the first 4 bytes of the data to contain a little endian
  * unsigned 32 bit integer with length information about the following data.
@@ -216,17 +216,26 @@ TaggedPropval::TaggedPropval(uint32_t tag, const void* val, bool copy) : tag(tag
  * @param      tag   Tag identifier
  * @param      val   Tag value
  * @param      len   Length of the buffer
+ * @param      copy  Whether to copy data
+ *
+ * @throw      std::invalid_argument     The tag type does not match binary
  */
-TaggedPropval::TaggedPropval(uint32_t tag, const void* val, uint32_t len) : tag(tag), type(tag&0xFFFF), owned(true)
+TaggedPropval::TaggedPropval(uint32_t tag, const void* val, uint32_t len, bool copy) : tag(tag), type(tag&0xFFFF), owned(copy)
 {
-	copyData(val, len, true);
+	if(type != PropvalType::BINARY)
+		throw std::invalid_argument(std::string("Cannot construct ")+typeName()+" tag from void*");
+	if(copy)
+		copyData(val, len);
+	else
+	{
+		value.data.first = static_cast<uint8_t*>(const_cast<void*>(val));
+		value.data.second = value.data.first+len;
+	}
 }
 
 
 /**
  * @brief      Initialize tagged property value (C++ string)
- *
- * No type check is performed to ensure the tag type actually matches a string type.
  *
  * If copy is set to true, the data is copied to an internally managed buffer,
  * otherwise only the pointer to the data is stored.
@@ -234,15 +243,162 @@ TaggedPropval::TaggedPropval(uint32_t tag, const void* val, uint32_t len) : tag(
  * @param      tag   Tag identifier
  * @param      val   Tag value
  * @param      copy  Whether to copy data
+ *
+ * @throw      std::invalid_argument     The tag type does not match string
  */
 TaggedPropval::TaggedPropval(uint32_t tag, const std::string& val, bool copy) : tag(tag), type(tag&0xFFFF), owned(copy)
 {
+	if(type != PropvalType::STRING && type != PropvalType::WSTRING)
+		throw std::invalid_argument(std::string("Cannot construct ")+typeName()+" tag from string");
 	if(val.size() > std::numeric_limits<uint32_t>::max())
 		throw std::out_of_range("String exceeds length limit");
 	if(copy)
 		copyData(val.c_str(), uint32_t(val.size())+1);
 	else
 		value.str = const_cast<char*>(val.c_str());
+}
+
+/**
+ * @brief      Initialize tagged property value (16 bit unsigned array)
+ *
+ * If copy is set to true, the data is copied to an internally managed buffer,
+ * otherwise only the pointer to the data is stored.
+ *
+ * @param      tag   Tag identifier
+ * @param      val   Tag value
+ * @param      copy  Whether to copy data
+ *
+ * @throw      std::invalid_argument     The tag type does not match string
+ */
+TaggedPropval::TaggedPropval(uint32_t tag, const uint16_t* val, uint32_t len, bool copy)
+    : tag(tag), type(tag&0xFFFF), owned(copy)
+{
+	if(type != PropvalType::SHORT_ARRAY)
+		throw std::invalid_argument(std::string("Cannot construct ")+typeName()+" tag from 16 bit unsigned array");
+	if(copy)
+		copyData(val, len*sizeof(uint16_t), alignof(uint16_t));
+	else
+		value.a16 = VArray<uint16_t>(const_cast<uint16_t*>(val), len);
+}
+
+/**
+ * @brief      Initialize tagged property value (32 bit unsigned array)
+ *
+ * If copy is set to true, the data is copied to an internally managed buffer,
+ * otherwise only the pointer to the data is stored.
+ *
+ * @param      tag   Tag identifier
+ * @param      val   Tag value
+ * @param      copy  Whether to copy data
+ *
+ * @throw      std::invalid_argument     The tag type does not match string
+ */
+TaggedPropval::TaggedPropval(uint32_t tag, const uint32_t* val, uint32_t len, bool copy)
+    : tag(tag), type(tag&0xFFFF), owned(copy)
+{
+	if(type != PropvalType::LONG_ARRAY)
+		throw std::invalid_argument(std::string("Cannot construct ")+typeName()+" tag from 32 bit unsigned array");
+	if(copy)
+		copyData(val, len*sizeof(uint32_t), alignof(uint32_t));
+	else
+		value.a32 = VArray<uint32_t>(const_cast<uint32_t*>(val), len);
+}
+
+/**
+ * @brief      Initialize tagged property value (64 bit unsigned array)
+ *
+ * If copy is set to true, the data is copied to an internally managed buffer,
+ * otherwise only the pointer to the data is stored.
+ *
+ * @param      tag   Tag identifier
+ * @param      val   Tag value
+ * @param      copy  Whether to copy data
+ *
+ * @throw      std::invalid_argument     The tag type does not match string
+ */
+TaggedPropval::TaggedPropval(uint32_t tag, const uint64_t* val, uint32_t len, bool copy)
+    : tag(tag), type(tag&0xFFFF), owned(copy)
+{
+	if(type != PropvalType::LONGLONG_ARRAY && type != PropvalType::CURRENCY_ARRAY)
+		throw std::invalid_argument(std::string("Cannot construct ")+typeName()+" tag from 64 bit unsigned array");
+	if(copy)
+		copyData(val, len*sizeof(uint64_t), alignof(uint64_t));
+	else
+		value.a64 = VArray<uint64_t>(const_cast<uint64_t*>(val), len);
+}
+
+/**
+ * @brief      Initialize tagged property value (32 bit float array)
+ *
+ * If copy is set to true, the data is copied to an internally managed buffer,
+ * otherwise only the pointer to the data is stored.
+ *
+ * @param      tag   Tag identifier
+ * @param      val   Tag value
+ * @param      copy  Whether to copy data
+ *
+ * @throw      std::invalid_argument     The tag type does not match string
+ */
+TaggedPropval::TaggedPropval(uint32_t tag, const float* val, uint32_t len, bool copy)
+    : tag(tag), type(tag&0xFFFF), owned(copy)
+{
+	if(type != PropvalType::FLOAT_ARRAY)
+		throw std::invalid_argument(std::string("Cannot construct ")+typeName()+" tag from 32 bit float array");
+	if(copy)
+		copyData(val, len*sizeof(float), alignof(float));
+	else
+		value.af = VArray<float>(const_cast<float*>(val), len);
+}
+
+/**
+ * @brief      Initialize tagged property value (64 bit float array)
+ *
+ * If copy is set to true, the data is copied to an internally managed buffer,
+ * otherwise only the pointer to the data is stored.
+ *
+ * @param      tag   Tag identifier
+ * @param      val   Tag value
+ * @param      copy  Whether to copy data
+ *
+ * @throw      std::invalid_argument     The tag type does not match string
+ */
+TaggedPropval::TaggedPropval(uint32_t tag, const double* val, uint32_t len, bool copy)
+    : tag(tag), type(tag&0xFFFF), owned(copy)
+{
+	if(type != PropvalType::DOUBLE_ARRAY && type != PropvalType::FLOATINGTIME_ARRAY)
+		throw std::invalid_argument(std::string("Cannot construct ")+typeName()+" tag from 64 bit float array");
+	if(copy)
+		copyData(val, len*sizeof(double), alignof(double));
+	else
+		value.ad = VArray<double>(const_cast<double*>(val), len);
+}
+
+/**
+ * @brief      Initialize tagged property value (string array)
+ *
+ * If copy is set to true, the data is copied to an internally managed buffer,
+ * otherwise only the pointer to the data is stored.
+ *
+ * @param      tag   Tag identifier
+ * @param      val   Tag value
+ * @param      copy  Whether to copy data
+ *
+ * @throw      std::invalid_argument     The tag type does not match string
+ */
+TaggedPropval::TaggedPropval(uint32_t tag, const char** val, uint32_t len, bool copy)
+    : tag(tag), type(tag&0xFFFF), owned(copy)
+{
+	if(type != PropvalType::STRING_ARRAY && type != PropvalType::WSTRING_ARRAY)
+		throw std::invalid_argument(std::string("Cannot construct ")+typeName()+" tag from string array");
+	if(copy)
+	{
+		copyData(val, len*sizeof(char*), alignof(char*));
+		if(val)
+			for(char*& str : value.astr)
+				str = copyStr(str);
+	}
+	else
+		value.astr = VArray<char*>(const_cast<char**>(val), len);
 }
 
 /**
@@ -259,7 +415,7 @@ TaggedPropval::TaggedPropval(const TaggedPropval& tp) : tag(tp.tag), type(tp.typ
  * @param      tp    TaggedPropval to move data from
  */
 TaggedPropval::TaggedPropval(TaggedPropval&& tp) noexcept : tag(tp.tag), type(tp.type), value(tp.value), owned(tp.owned)
-{tp.value.ptr = nullptr;}
+{tp.value.zero();}
 
 
 /**
@@ -297,7 +453,7 @@ TaggedPropval& TaggedPropval::operator=(TaggedPropval&& tp) noexcept
 	type = tp.type;
 	value = tp.value;
 	owned = tp.owned;
-	tp.value.ptr = nullptr;
+	tp.value.zero();
 	return *this;
 }
 
@@ -330,37 +486,14 @@ static std::string hexData(const uint8_t* data, uint32_t len)
 std::string TaggedPropval::printValue() const
 {
 	std::string content;
-	uint16_t svtype = (type&0x3000) == 0x3000? type & ~0x3000 : type;
-	time_t timestamp;
-	switch(svtype)
+	switch(type)
 	{
-	case PropvalType::BYTE:
-		content = std::to_string(int(value.u8)); break;
-	case PropvalType::SHORT:
-		content = std::to_string(int(value.u16)); break;
-	case PropvalType::LONG:
-	case PropvalType::ERROR:
-		content = std::to_string(value.u32); break;
-	case PropvalType::LONGLONG:
-	case PropvalType::CURRENCY:
-		content = std::to_string(value.u64); break;
+	default:
+		return toString();
 	case PropvalType::FILETIME:
-		timestamp = util::nxTime(value.u64);
+		time_t timestamp = util::nxTime(value.u64);
 		content = ctime(&timestamp);
 		content.pop_back(); break;
-	case PropvalType::FLOAT:
-		content = std::to_string(value.f); break;
-	case PropvalType::DOUBLE:
-	case PropvalType::FLOATINGTIME:
-		content = std::to_string(value.d); break;
-	case PropvalType::STRING:
-	case PropvalType::WSTRING:
-		content = value.str; break;
-	case PropvalType::BINARY: {
-		content = *value.a32 > 20? "[DATA]" : hexData(value.a8+4, *value.a32); break;
-	}
-	default:
-		content = "[UNKNOWN]";
 	}
 	return content;
 }
@@ -377,8 +510,7 @@ std::string TaggedPropval::printValue() const
 std::string TaggedPropval::toString() const
 {
 	std::string content;
-	uint16_t svtype = (type&0x3000) == 0x3000? type & ~0x3000 : type;
-	switch(svtype)
+	switch(type)
 	{
 	case PropvalType::BYTE:
 		content = std::to_string(int(value.u8)); break;
@@ -400,7 +532,18 @@ std::string TaggedPropval::toString() const
 	case PropvalType::WSTRING:
 		content = value.str; break;
 	case PropvalType::BINARY:
-		content = "[DATA]"; break;
+		content = "["+std::to_string(count())+" bytes]"; break;
+	case PropvalType::SHORT_ARRAY:
+	case PropvalType::LONG_ARRAY:
+	case PropvalType::LONGLONG_ARRAY:
+	case PropvalType::CURRENCY_ARRAY:
+	case PropvalType::FLOAT_ARRAY:
+	case PropvalType::DOUBLE_ARRAY:
+	case PropvalType::FLOATINGTIME_ARRAY:
+	case PropvalType::STRING_ARRAY:
+	case PropvalType::WSTRING_ARRAY:
+	case PropvalType::BINARY_ARRAY:
+		content = "["+std::to_string(count())+" elements]"; break;
 	default:
 		content = "[UNKNOWN]";
 	}
@@ -421,18 +564,11 @@ std::string TaggedPropval::toString() const
  */
 uint32_t TaggedPropval::binaryLength() const
 {
-	if(type != PropvalType::BINARY || !value.ptr)
-		return 0;
-	uint32_t v;
-	memcpy(&v, value.ptr, sizeof(uint32_t));
-	return le32toh(v);
+	return type != PropvalType::BINARY || !value.data.first? 0 : uint32_t(value.data.second-value.data.first);
 }
 
 /**
  * @brief      Return pointer to the binary data
- *
- * Return pointer to the pure data, without prepended lenght. The lenght of the
- * buffer can be queried with binaryLength().
  *
  * If the TaggedPropval is not of type BINARY or the buffer is not initialized,
  * nullptr is returned.
@@ -440,27 +576,56 @@ uint32_t TaggedPropval::binaryLength() const
  * @return
  */
 const void* TaggedPropval::binaryData() const
-{return type == PropvalType::BINARY && value.a8? static_cast<const void*>(value.a8+sizeof(uint32_t)) : nullptr;}
+{return type == PropvalType::BINARY? value.data.first : nullptr;}
 
 /**
- * @brief      Copy string to internal buffer
+ * @brief      Copy string to new buffer
  *
  * @param      str   String to copy
+ *
+ * @return     Newly allocated string buffer
  */
-void TaggedPropval::copyStr(const char* str)
+char* TaggedPropval::copyStr(const char* str)
 {
-	value.str = new char[strlen(str)+1];
-	strcpy(value.str, str);
+	char* copy = new char[strlen(str)+1];
+	strcpy(copy, str);
+	return copy;
 }
 
+/**
+ * @brief      Copy data from another TaggedPropval
+ *
+ * This operation does not perform a type check and assumes that the types of
+ * both TaggedPropvals are aligned.
+ *
+ * Previously held data must be freed manually before calling copyValue.
+ *
+ * @param      TaggedPropval to copy data from
+ */
 void TaggedPropval::copyValue(const TaggedPropval& tp)
 {
-	if(tp.value.ptr == nullptr || !tp.owned)
-		value.ptr = tp.value.ptr;
+	if(tp.value.data.first == nullptr || !tp.owned)
+		value.data = tp.value.data;
 	else if((type == PropvalType::STRING || type == PropvalType::WSTRING))
-		copyStr(tp.value.str);
-	else if(type == PropvalType::BINARY)
-		copyData(tp.value.ptr, tp.binaryLength()+sizeof(uint32_t));
+		value.str = copyStr(tp.value.str);
+	else if(type == PropvalType::STRING_ARRAY || type == PropvalType::WSTRING_ARRAY)
+	{
+		copyData(tp.value.astr.first, tp.value.astr.count()*sizeof(char*), alignof(char*));
+		for(char*& str : value.astr)
+			str = copyStr(str);
+	}
+	else if(type == PropvalType::BINARY_ARRAY)
+	{
+		copyData(nullptr, tp.value.data.count(), alignof(VArray<uint8_t>));
+		for(uint32_t i = 0; i < value.adata.count(); ++i)
+		{
+			uint32_t len = value.adata.first[i].count();
+			value.adata.first[i] = VArray<uint8_t>(new uint8_t[len], len);
+			memcpy(value.adata.first[i].first, tp.value.adata.first[i].first, len);
+		}
+	}
+	else if(PropvalType::isArray(type))
+		copyData(tp.value.data.first, tp.value.data.count(), alignof(std::max_align_t));
 	else
 		value = tp.value;
 }
@@ -471,20 +636,12 @@ void TaggedPropval::copyValue(const TaggedPropval& tp)
  * @param      data  Data to copy
  * @param      len   Number of bytes
  */
-void TaggedPropval::copyData(const void* data, uint32_t len, bool prependLength)
+void TaggedPropval::copyData(const void* data, uint32_t len, size_t alignment)
 {
-	if(prependLength)
-	{
-		value.a8 = new uint8_t[len+sizeof(uint32_t)];
-		uint32_t lenle =  htole32(len);
-		memcpy(value.a8, &lenle, sizeof(uint32_t));
-		memcpy(value.a8+sizeof(uint32_t), data, len);
-	}
-	else
-	{
-		value.ptr = new char[len];
-		memcpy(value.ptr, data, len);
-	}
+	value.data.first = new(std::align_val_t(alignment)) uint8_t[len];
+	value.data.second = value.data.first+len;
+	if(data)
+		memcpy(value.data.first, data, len);
 }
 
 /**
@@ -492,14 +649,70 @@ void TaggedPropval::copyData(const void* data, uint32_t len, bool prependLength)
  */
 void TaggedPropval::free()
 {
-	if((type == PropvalType::STRING || type == PropvalType::WSTRING || type == PropvalType::BINARY)
-	        && value.ptr != nullptr && owned)
+	if(!owned || value.data.first == nullptr)
+		return;
+	if(type == PropvalType::STRING_ARRAY || type == PropvalType::WSTRING_ARRAY)
+		for(char* ptr : value.astr)
+			delete[] ptr;
+	else if(type == PropvalType::BINARY_ARRAY)
+		for(auto bin : value.adata)
+			delete[] bin.first;
+	if(type == PropvalType::STRING || type == PropvalType::WSTRING)
 		delete[] value.str;
+	else if(PropvalType::isArray(type))
+		delete[] value.data.first;
+	value.zero();
 }
 
+/**
+ * @brief      Return value count
+ *
+ * Return the number of elements of array tags,
+ * the number of bytes in a binary tag and
+ * 1 for non-array types.
+ *
+ * @return     Number of values
+ */
+uint32_t TaggedPropval::count() const
+{
+	if(!PropvalType::isArray(type))
+		return 1;
+	if(value.data.first == nullptr)
+		return 0;
+	switch(type)
+	{
+	case PropvalType::BINARY:
+		return value.data.count();
+	case PropvalType::SHORT_ARRAY:
+		return value.a16.count();
+	case PropvalType::LONG_ARRAY:
+		return value.a32.count();
+	case PropvalType::LONGLONG_ARRAY:
+	case PropvalType::CURRENCY_ARRAY:
+		return value.a64.count();
+	case PropvalType::FLOAT_ARRAY:
+		return value.af.count();
+	case PropvalType::DOUBLE_ARRAY:
+	case PropvalType::FLOATINGTIME_ARRAY:
+		return value.ad.count();
+	case PropvalType::STRING_ARRAY:
+	case PropvalType::WSTRING_ARRAY:
+		return value.astr.count();
+	case PropvalType::BINARY_ARRAY:
+		return value.adata.count();
+	}
+	return 0;
+}
+
+/**
+ * @brief      String representation of tag type
+ */
 const char* TaggedPropval::typeName() const
 {return typeName(type);}
 
+/**
+ * @brief      String representation of tag type
+ */
 const char* TaggedPropval::typeName(uint16_t type)
 {
 	switch(type)
@@ -530,6 +743,26 @@ const char* TaggedPropval::typeName(uint16_t type)
 		return "WSTRING";
 	case PropvalType::BINARY:
 		return "BINARY";
+	case PropvalType::SHORT_ARRAY:
+		return "SHORT ARRAY";
+	case PropvalType::LONG_ARRAY:
+		return "LONG ARRAY";
+	case PropvalType::LONGLONG_ARRAY:
+		return "LONGLONG ARRAY";
+	case PropvalType::CURRENCY_ARRAY:
+		return "CURRENCY ARRAY";
+	case PropvalType::FLOAT_ARRAY:
+		return "FLOAT ARRAY";
+	case PropvalType::DOUBLE_ARRAY:
+		return "DOUBLE ARRAY";
+	case PropvalType::FLOATINGTIME_ARRAY:
+		return "FLOATINGTIME ARRAY";
+	case PropvalType::STRING_ARRAY:
+		return "STRING ARRAY";
+	case PropvalType::WSTRING_ARRAY:
+		return "WSTRING ARRAY";
+	case PropvalType::BINARY_ARRAY:
+		return "BINARY ARRAY";
 	}
 	return "UNKNOWN";
 }
@@ -892,6 +1125,46 @@ namespace exmdbpp
 using namespace structures;
 
 /**
+ * @brief      De-/Serialization specialization for TaggedPropval::VArray
+ */
+template<typename T>
+struct IOBuffer::Serialize<TaggedPropval::VArray<T>>
+{
+	/**
+	 * @brief      Serialize VArray to buffer
+	 *
+	 * @param      buff  Buffer to write data to
+	 * @param      pv    TaggedPropval to serialize
+	 */
+	static void push(IOBuffer& buff, const TaggedPropval::VArray<T>& va)
+	{
+		buff << va.count();
+		if constexpr(sizeof(T) == 1)
+		    return buff.push_raw(va.first, va.count());
+		for(T v : va)
+			buff << v;
+	}
+
+	/**
+	 * @brief      Read VArray from buffer
+	 *
+	 * @param      buff  Buffer to write data to
+	 * @param      pv    TaggedPropval to serialize
+	 */
+	static void pop(IOBuffer& buff, TaggedPropval::VArray<T>& va)
+	{
+		uint32_t count = buff.pop<uint32_t>();
+		va.first = new T[count];
+		va.second = va.first+count;
+		if constexpr(sizeof(T) == 1)
+		    memcpy(va.first, buff.pop_raw(count), count);
+		else if constexpr(!std::is_pointer_v<T>)
+		    for(T& v : va)
+		        buff >> v;
+	}
+};
+
+/**
  * @brief      Serialize tagged propval to buffer
  *
  * @param      buff  Buffer to write data to
@@ -900,11 +1173,10 @@ using namespace structures;
 template<>
 void IOBuffer::Serialize<TaggedPropval>::push(IOBuffer& buff, const TaggedPropval& pv)
 {
-	uint16_t svtype = (pv.type&0x3000) == 0x3000? pv.type & ~0x3000 : pv.type;
 	buff << pv.tag;
-	if(pv.type == PropvalType::UNSPECIFIED)
+	if(PropvalType::tagType(pv.tag) == PropvalType::UNSPECIFIED)
 		buff << pv.type;
-	switch(svtype)
+	switch(pv.type)
 	{
 	default:
 		throw SerializationError("Serialization of type "+std::to_string(pv.type)+" is not supported.");
@@ -928,10 +1200,24 @@ void IOBuffer::Serialize<TaggedPropval>::push(IOBuffer& buff, const TaggedPropva
 	case PropvalType::WSTRING:
 		buff << pv.value.str; break;
 	case PropvalType::BINARY:
-		uint32_t len;
-		memcpy(&len, pv.value.ptr, sizeof(len));
-		len = le32toh(len);
-		buff.push_raw(pv.value.ptr, len+sizeof(uint32_t)); break;
+		buff << pv.value.data; break;
+	case PropvalType::SHORT_ARRAY:
+		buff << pv.value.a16; break;
+	case PropvalType::LONG_ARRAY:
+		buff << pv.value.a32; break;
+	case PropvalType::LONGLONG_ARRAY:
+	case PropvalType::CURRENCY_ARRAY:
+		buff << pv.value.a64; break;
+	case PropvalType::FLOAT_ARRAY:
+		buff << pv.value.af; break;
+	case PropvalType::DOUBLE_ARRAY:
+	case PropvalType::FLOATINGTIME_ARRAY:
+		buff << pv.value.ad; break;
+	case PropvalType::WSTRING_ARRAY:
+	case PropvalType::STRING_ARRAY:
+		buff << pv.value.astr; break;
+	case PropvalType::BINARY_ARRAY:
+		buff << pv.value.adata; break;
 	}
 }
 
