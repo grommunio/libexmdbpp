@@ -5,6 +5,7 @@
 
 namespace py = pybind11;
 
+using namespace exmdbpp::constants;
 using namespace exmdbpp::requests;
 using namespace exmdbpp::queries;
 using namespace exmdbpp::structures;
@@ -18,7 +19,7 @@ constexpr inline size_t arrsize(T(&)[N])
 
 std::string hexstr(uint32_t value, uint8_t width)
 {
-	static const char* chars = "0123456789ABCDEF";
+	static const char* chars = "0123456789abcdef";
 	std::string res("0x");
 	res.reserve(width+2);
 	for(int64_t nibble = 4*(width-1); nibble >= 0; nibble -= 4)
@@ -35,6 +36,110 @@ std::string Folder_repr(const Folder& f)
 
 std::string FolderList_repr(const FolderList& fl)
 {return "<List of "+std::to_string(fl.folders.size())+" folder"+(fl.folders.size() == 1? "" : "s")+">";}
+
+///////////////////////////////////////////////////////////////////////////////
+// Wrappers for TaggedPropvals
+
+TaggedPropval TaggedPropval_init(uint32_t tag, const py::object& value) try
+{
+	switch(PropvalType::tagType(tag))
+	{
+	case PropvalType::BYTE:
+		return TaggedPropval(tag, value.cast<uint8_t>());
+	case PropvalType::SHORT:
+		return TaggedPropval(tag, value.cast<uint16_t>());
+	case PropvalType::LONG:
+	case PropvalType::ERROR:
+		return TaggedPropval(tag, value.cast<uint32_t>());
+	case PropvalType::LONGLONG:
+	case PropvalType::CURRENCY:
+	case PropvalType::FILETIME:
+		return TaggedPropval(tag, value.cast<uint64_t>());
+	case PropvalType::FLOAT:
+		return TaggedPropval(tag, value.cast<float>());
+	case PropvalType::DOUBLE:
+	case PropvalType::FLOATINGTIME:
+		return TaggedPropval(tag, value.cast<double>());
+	case PropvalType::STRING:
+	case PropvalType::WSTRING:
+		return TaggedPropval(tag, value.cast<std::string>());
+	case PropvalType::BINARY:
+		std::string content = value.cast<std::string>();
+		return TaggedPropval(tag, static_cast<const void*>(content.c_str()), uint32_t(content.size()));
+	}
+	throw py::value_error("Usupported tag type");
+} catch (const py::cast_error&)
+{
+	std::string pytype = py::str(value.get_type());
+	throw py::type_error("Cannot store value of type "+pytype+" in "+TaggedPropval::typeName(tag&0xFFFF)+" tag.");
+}
+
+
+py::object TaggedPropval_getValue(const TaggedPropval& tp)
+{
+	switch(tp.type)
+	{
+	case PropvalType::BYTE:
+		return py::cast(tp.value.u8);
+	case PropvalType::SHORT:
+		return py::cast(tp.value.u16);
+	case PropvalType::LONG:
+	case PropvalType::ERROR:
+		return py::cast(tp.value.u32);
+	case PropvalType::LONGLONG:
+	case PropvalType::CURRENCY:
+	case PropvalType::FILETIME:
+		return py::cast(tp.value.u64);
+	case PropvalType::FLOAT:
+		return py::cast(tp.value.f);
+	case PropvalType::DOUBLE:
+	case PropvalType::FLOATINGTIME:
+		return py::cast(tp.value.d);
+	case PropvalType::STRING:
+	case PropvalType::WSTRING:
+		return py::cast(tp.value.str);
+	case PropvalType::BINARY:
+		return py::object(py::bytes(reinterpret_cast<const char*>(tp.binaryData()), tp.binaryLength()));
+	}
+	return py::none();
+}
+
+void TaggedPropval_setValue(TaggedPropval& tp, const py::object& value) try
+{
+	switch(tp.type)
+	{
+	case PropvalType::BYTE:
+		tp.value.u8 = value.cast<uint8_t>(); return;
+	case PropvalType::SHORT:
+		tp.value.u16 = value.cast<uint16_t>(); return;
+	case PropvalType::LONG:
+	case PropvalType::ERROR:
+		tp.value.u32 = value.cast<uint32_t>(); return;
+	case PropvalType::LONGLONG:
+	case PropvalType::CURRENCY:
+	case PropvalType::FILETIME:
+		tp.value.u64 = value.cast<uint64_t>(); return;
+	case PropvalType::FLOAT:
+		tp.value.f = value.cast<float>(); return;
+	case PropvalType::DOUBLE:
+	case PropvalType::FLOATINGTIME:
+		tp.value.d = value.cast<double>(); return;
+	case PropvalType::STRING:
+	case PropvalType::WSTRING:
+		tp = TaggedPropval(tp.tag, value.cast<std::string>()); return;
+	case PropvalType::BINARY:
+		std::string content = value.cast<std::string>();
+		tp = TaggedPropval(tp.tag, static_cast<const void*>(content.c_str()), uint32_t(content.size()));
+	}
+	throw py::type_error("Tag type not supported");
+} catch(const py::cast_error&)
+{
+	std::string pytype = py::str(value.get_type());
+	throw py::type_error("Cannot store value of type "+pytype+" in "+tp.typeName()+" tag.");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Module definition
 
 PYBIND11_MODULE(pyexmdb, m)
 {
@@ -130,22 +235,13 @@ PYBIND11_MODULE(pyexmdb, m)
 	    .def_readonly("entries", &TableResponse::entries);
 
 	py::class_<TaggedPropval>(m, "TaggedPropval")
-	        .def(py::init<uint32_t, uint64_t>(),
-	             py::arg("tag"), py::arg("value"))
-	        .def(py::init<uint32_t, const std::string&>(),
+	        .def(py::init(&TaggedPropval_init),
 	             py::arg("tag"), py::arg("value"))
 	        .def("toString", &TaggedPropval::toString)
-	        .def_readwrite("tag", &TaggedPropval::tag)
-	        .def_readwrite("type", &TaggedPropval::type)
-	        .def_readwrite("value", &TaggedPropval::value)
+	        .def_readonly("tag", &TaggedPropval::tag)
+	        .def_readonly("type", &TaggedPropval::type)
+	        .def_property("val", TaggedPropval_getValue, TaggedPropval_setValue)
 	        .def("__repr__", &TaggedPropval_repr);
-
-	py::class_<TaggedPropval::Value>(m, "_TaggedPropval_Value")
-	        .def_readwrite("u8", &TaggedPropval::Value::u8)
-	        .def_readwrite("u16", &TaggedPropval::Value::u16)
-	        .def_readwrite("u32", &TaggedPropval::Value::u32)
-	        .def_readwrite("u64", &TaggedPropval::Value::f)
-	        .def_readwrite("d", &TaggedPropval::Value::d);
 
 	auto exmdbError = py::register_exception<exmdbpp::ExmdbError>(m, "ExmdbError", PyExc_RuntimeError);
 	py::register_exception<exmdbpp::ConnectionError>(m, "ConnectionError", exmdbError.ptr());

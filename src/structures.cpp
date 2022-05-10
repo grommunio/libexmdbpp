@@ -497,6 +497,43 @@ void TaggedPropval::free()
 		delete[] value.str;
 }
 
+const char* TaggedPropval::typeName() const
+{return typeName(type);}
+
+const char* TaggedPropval::typeName(uint16_t type)
+{
+	switch(type)
+	{
+	case PropvalType::BYTE:
+		return "BYTE";
+	case PropvalType::SHORT:
+		return "SHORT";
+	case PropvalType::LONG:
+		return "LONG";
+	case PropvalType::ERROR:
+		return "ERROR";
+	case PropvalType::LONGLONG:
+		return "LONGLONG";
+	case PropvalType::CURRENCY:
+		return "CURRENCY";
+	case PropvalType::FILETIME:
+		return "FILETIME";
+	case PropvalType::FLOAT:
+		return "FLOAT";
+	case PropvalType::DOUBLE:
+		return "DOUBLE";
+	case PropvalType::FLOATINGTIME:
+		return "FLOATINGTIME";
+	case PropvalType::STRING:
+		return "STRING";
+	case PropvalType::WSTRING:
+		return "WSTRING";
+	case PropvalType::BINARY:
+		return "BINARY";
+	}
+	return "UNKNOWN";
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**

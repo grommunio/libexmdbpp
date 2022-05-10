@@ -43,6 +43,9 @@ public:
 	uint32_t binaryLength() const;
 	const void* binaryData() const;
 
+	const char* typeName() const;
+	static const char* typeName(uint16_t);
+
 	uint32_t tag = 0; ///< Tag identifier
 	uint16_t type = 0; ///< Type of the tag (either derived from tag or explicitely specified if tag type is UNSPECIFIED)
 
