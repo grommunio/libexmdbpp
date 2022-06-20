@@ -164,30 +164,39 @@ ExmdbQueries::PropvalTable ExmdbQueries::findFolder(const std::string& homedir, 
 /**
  * @brief      Retrieve public folder list
  *
- * Provides a higher level protocol implementation for retrieving
- * the public folders of a domain.
+ * Calls listFolders on the IPMSUBTREE folder.
  *
  * @param      homedir  Home directory path of the domain
  * @param      proptags Tags to return
+ * @param      offset       Number of results to skip
+ * @param      limit        Limit number of results
  *
  * @return     Table of tagged propvals. Can be converted to FolderList for easier access.
  */
-ExmdbQueries::PropvalTable ExmdbQueries::getFolderList(const std::string& homedir, const std::vector<uint32_t>& proptags)
-{return listFolders(homedir, util::makeEidEx(1, PublicFid::IPMSUBTREE), false, proptags);}
+ExmdbQueries::PropvalTable ExmdbQueries::getFolderList(const std::string& homedir, const std::vector<uint32_t>& proptags,
+                                                       uint32_t offset, uint32_t limit)
+{return listFolders(homedir, util::makeEidEx(1, PublicFid::IPMSUBTREE), false, proptags, offset, limit);}
 
 /**
  * @brief      List sub-folders of a given folder
  *
- * @param      homedir  Home directory path of the domain
- * @param      proptags Tags to return
+ * If both limit and offset are 0 (default), all results are returned.
+ *
+ * @param      homedir      Home directory path of the domain
+ * @param      parent       ID of the parent folder
+ * @param      recursive    Recursively list sub-folders
+ * @param      proptags     Tags to return
+ * @param      offset       Number of results to skip
+ * @param      limit        Limit number of results
  *
  * @return     Table of tagged propvals. Can be converted to FolderList for easier access.
  */
 ExmdbQueries::PropvalTable ExmdbQueries::listFolders(const std::string& homedir, uint64_t parent, bool recursive,
-                                                     const std::vector<uint32_t>& proptags)
+                                                     const std::vector<uint32_t>& proptags, uint32_t offset, uint32_t limit)
 {
 	auto lhtResponse = send<LoadHierarchyTableRequest>(homedir, parent, "", recursive? TableFlags::DEPTH : 0);
-	auto qtResponse = send<QueryTableRequest>(homedir, "", 0, lhtResponse.tableId, proptags, 0, lhtResponse.rowCount);
+	limit = offset || limit || lhtResponse.rowCount < limit? limit : lhtResponse.rowCount;
+	auto qtResponse = send<QueryTableRequest>(homedir, "", 0, lhtResponse.tableId, proptags, offset, limit);
 	send<UnloadTableRequest>(homedir, lhtResponse.tableId);
 	return std::move(qtResponse.entries);
 }
@@ -388,7 +397,7 @@ ExmdbQueries::ProblemList ExmdbQueries::setStoreProperties(const std::string& ho
 {return send<SetStorePropertiesRequest>(homedir, cpid, propvals).problems;}
 
 /**
- * @brief      Remove member from member list
+ * @brief      Unload the users store
  *
  * @param      homedir   Home directory path of the user
  */

@@ -267,7 +267,8 @@ PYBIND11_MODULE(pyexmdb, m)
 	    .def("getAllStoreProperties", &ExmdbQueries::getAllStoreProperties,  release_gil(),
 	         py::arg("homedir"))
 	    .def("getFolderList", &ExmdbQueries::getFolderList, release_gil(),
-	         py::arg("homedir"), py::arg("properties") = ExmdbQueries::defaultFolderProps)
+	         py::arg("homedir"), py::arg("properties")=ExmdbQueries::defaultFolderProps,
+	         py::arg("offset")=0, py::arg("limit")=0)
 	    .def("getFolderMemberList", &ExmdbQueries::getFolderMemberList, release_gil(),
 	         py::arg("homedir"), py::arg("folderId"))
 	    .def("getFolderProperties", &ExmdbQueries::getFolderProperties, release_gil(),
@@ -278,7 +279,7 @@ PYBIND11_MODULE(pyexmdb, m)
 	         py::arg("homedir"), py::arg("folderName"))
 	    .def("listFolders", &ExmdbQueries::listFolders, release_gil(),
 	         py::arg("homedir"), py::arg("folderId"), py::arg("recursive")=false,
-	         py::arg("proptags") = ExmdbQueries::defaultFolderProps)
+	         py::arg("proptags") = ExmdbQueries::defaultFolderProps, py::arg("offset")=0, py::arg("limit")=0)
 	    .def("removeStoreProperties", &ExmdbQueries::removeStoreProperties, release_gil(),
 	         py::arg("homedir"), py::arg("proptags"))
 	    .def("removeDevice", &ExmdbQueries::removeDevice, release_gil(),
