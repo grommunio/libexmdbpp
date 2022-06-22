@@ -244,12 +244,69 @@ void TaggedPropval_setValue(TaggedPropval& tp, const py::object& value) try
 	throw py::type_error("Cannot store value of type "+pytype+" in "+tp.typeName()+" tag.");
 }
 
+/**
+ * @brief      Wrapper for Restriction constructors
+ *
+ * Workaround because binding to functions with rvalue references does not
+ * work properly.
+ */
+struct pyRestriction
+{
+	static Restriction CONTENT(uint32_t fuzzyLevel, uint32_t proptag, TaggedPropval propval)
+	{return Restriction::CONTENT(fuzzyLevel, proptag, std::move(propval));}
+
+	static Restriction COUNT(uint32_t count, Restriction restriction)
+	{return Restriction::COUNT(count, std::move(restriction));}
+
+	static Restriction NOT(Restriction restriction)
+	{return Restriction::NOT(std::move(restriction));}
+
+	static Restriction PROPERTY(Restriction::Op op, uint32_t proptag, TaggedPropval propval)
+	{return Restriction::PROPERTY(op, proptag, std::move(propval));}
+
+	static Restriction SUBOBJECT(uint32_t subobject, Restriction restriction)
+	{return Restriction::SUBOBJECT(subobject, std::move(restriction));}
+
+	static uint32_t FL_FULLSTRING;
+
+	static std::function<uint32_t(const py::object)> getv(uint32_t v)
+	{return [v](const py::object&){return v;};}
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 // Module definition
 
 PYBIND11_MODULE(pyexmdb, m)
 {
 	m.doc() = "libexmdbpp Python bindings";
+
+	py::class_<Restriction> restriction (m, "Restriction");
+	restriction.def_static("NULL", &Restriction::XNULL)
+	           .def_static("AND", &Restriction::AND, py::arg("restrictions"))
+	           .def_static("BITMASK", &Restriction::BITMASK, py::arg("all"), py::arg("proptag"), py::arg("mask"))
+	           .def_static("CONTENT", &pyRestriction::CONTENT, py::arg("fuzzyLevel"), py::arg("proptag"), py::arg("propval"))
+	           .def_static("COUNT", &pyRestriction::COUNT, py::arg("count"), py::arg("restriction"))
+	           .def_static("EXIST", &Restriction::EXIST, py::arg("proptag"))
+	           .def_static("NOT", &pyRestriction::NOT, py::arg("restriction"))
+	           .def_static("OR", &Restriction::OR, py::arg("restrictions"))
+	           .def_static("PROPCOMP", &Restriction::PROPCOMP, py::arg("op"), py::arg("proptag1"), py::arg("proptag2"))
+	           .def_static("PROPERTY", &pyRestriction::PROPERTY, py::arg("op"), py::arg("proptag"), py::arg("propval"))
+	           .def_static("SIZE", &Restriction::SIZE, py::arg("op"), py::arg("proptag"), py::arg("size"))
+	           .def_static("SUBOBJECT", &pyRestriction::SUBOBJECT, py::arg("subobject"), py::arg("res"))
+	           .def_property_readonly_static("FL_FULLSTRING", pyRestriction::getv(Restriction::FL_FULLSTRING))
+	           .def_property_readonly_static("FL_SUBSTRING", pyRestriction::getv(Restriction::FL_SUBSTRING))
+	           .def_property_readonly_static("FL_PREFIX", pyRestriction::getv(Restriction::FL_PREFIX))
+	           .def_property_readonly_static("FL_IGNORECASE", pyRestriction::getv(Restriction::FL_IGNORECASE))
+	           .def_property_readonly_static("FL_IGNORE_NONSPACE", pyRestriction::getv(Restriction::FL_IGNORENONSPACE))
+	           .def_property_readonly_static("FL_LOOSE", pyRestriction::getv(Restriction::FL_LOOSE));
+
+	py::enum_<Restriction::Op>(restriction, "Op")
+	        .value("LT", Restriction::LT)
+	        .value("LE", Restriction::LE)
+	        .value("GT", Restriction::GT)
+	        .value("GE", Restriction::GE)
+	        .value("EQ", Restriction::EQ)
+	        .value("NE", Restriction::NE);
 
 	py::class_<ExmdbQueries>(m, "ExmdbQueries", "Main exmdb client interface")
 	    .def_readonly_static("defaultFolderProps", &ExmdbQueries::defaultFolderProps)
@@ -266,9 +323,6 @@ PYBIND11_MODULE(pyexmdb, m)
 	         py::arg("proptags") = ExmdbQueries::defaultFolderProps)
 	    .def("getAllStoreProperties", &ExmdbQueries::getAllStoreProperties,  release_gil(),
 	         py::arg("homedir"))
-	    .def("getFolderList", &ExmdbQueries::getFolderList, release_gil(),
-	         py::arg("homedir"), py::arg("properties")=ExmdbQueries::defaultFolderProps,
-	         py::arg("offset")=0, py::arg("limit")=0)
 	    .def("getFolderMemberList", &ExmdbQueries::getFolderMemberList, release_gil(),
 	         py::arg("homedir"), py::arg("folderId"))
 	    .def("getFolderProperties", &ExmdbQueries::getFolderProperties, release_gil(),
@@ -279,7 +333,8 @@ PYBIND11_MODULE(pyexmdb, m)
 	         py::arg("homedir"), py::arg("folderName"))
 	    .def("listFolders", &ExmdbQueries::listFolders, release_gil(),
 	         py::arg("homedir"), py::arg("folderId"), py::arg("recursive")=false,
-	         py::arg("proptags") = ExmdbQueries::defaultFolderProps, py::arg("offset")=0, py::arg("limit")=0)
+	         py::arg("proptags") = ExmdbQueries::defaultFolderProps, py::arg("offset")=0, py::arg("limit")=0,
+	         py::arg("restriction")=Restriction::XNULL())
 	    .def("removeStoreProperties", &ExmdbQueries::removeStoreProperties, release_gil(),
 	         py::arg("homedir"), py::arg("proptags"))
 	    .def("removeDevice", &ExmdbQueries::removeDevice, release_gil(),
@@ -302,6 +357,7 @@ PYBIND11_MODULE(pyexmdb, m)
 	         py::arg("homedir"), py::arg("cpid"), py::arg("propvals"))
 	    .def("unloadStore", &ExmdbQueries::unloadStore, release_gil(),
 	         py::arg("homedir"));
+
 	py::class_<Folder>(m, "Folder")
 	        .def(py::init())
 	        .def(py::init<ExmdbQueries::PropvalList>(), py::arg("propvalList"))

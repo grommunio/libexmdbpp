@@ -100,12 +100,13 @@ public:
 	PropvalTable findFolder(const std::string&, const std::string&, uint64_t=0, bool=true, uint32_t fuuz=0,
 	                        const std::vector<uint32_t>& = defaultFolderProps);
 	ProptagList getAllStoreProperties(const std::string&);
-	PropvalTable getFolderList(const std::string&, const std::vector<uint32_t>& = defaultFolderProps, uint32_t=0, uint32_t=0);
+	[[deprecated]] PropvalTable getFolderList(const std::string&, const std::vector<uint32_t>& = defaultFolderProps, uint32_t=0, uint32_t=0);
 	PropvalTable getFolderMemberList(const std::string&, uint64_t);
 	PropvalList getFolderProperties(const std::string&, uint32_t, uint64_t, const std::vector<uint32_t>& = defaultFolderProps);
 	SyncData getSyncData(const std::string&, const std::string&);
 	PropvalList getStoreProperties(const std::string&, uint32_t, const std::vector<uint32_t>&);
-	PropvalTable listFolders(const std::string&, uint64_t, bool=false, const std::vector<uint32_t>& = defaultFolderProps, uint32_t=0, uint32_t=0);
+	PropvalTable listFolders(const std::string&, uint64_t, bool=false, const std::vector<uint32_t>& = defaultFolderProps,
+	                         uint32_t=0, uint32_t=0, const structures::Restriction& = structures::Restriction::XNULL());
 	void removeStoreProperties(const std::string&, const std::vector<uint32_t>&);
 	void removeDevice(const std::string&, const std::string&, const std::string&);
 	bool resyncDevice(const std::string&, const std::string&, const std::string&, uint32_t);

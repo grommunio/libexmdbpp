@@ -166,6 +166,8 @@ ExmdbQueries::PropvalTable ExmdbQueries::findFolder(const std::string& homedir, 
  *
  * Calls listFolders on the IPMSUBTREE folder.
  *
+ * @deprecated This function will be removed. Use listFolders() instead.
+ *
  * @param      homedir  Home directory path of the domain
  * @param      proptags Tags to return
  * @param      offset       Number of results to skip
@@ -192,9 +194,10 @@ ExmdbQueries::PropvalTable ExmdbQueries::getFolderList(const std::string& homedi
  * @return     Table of tagged propvals. Can be converted to FolderList for easier access.
  */
 ExmdbQueries::PropvalTable ExmdbQueries::listFolders(const std::string& homedir, uint64_t parent, bool recursive,
-                                                     const std::vector<uint32_t>& proptags, uint32_t offset, uint32_t limit)
+                                                     const std::vector<uint32_t>& proptags, uint32_t offset, uint32_t limit,
+                                                     const structures::Restriction& restriction)
 {
-	auto lhtResponse = send<LoadHierarchyTableRequest>(homedir, parent, "", recursive? TableFlags::DEPTH : 0);
+	auto lhtResponse = send<LoadHierarchyTableRequest>(homedir, parent, "", recursive? TableFlags::DEPTH : 0, restriction);
 	limit = offset || limit || lhtResponse.rowCount < limit? limit : lhtResponse.rowCount;
 	auto qtResponse = send<QueryTableRequest>(homedir, "", 0, lhtResponse.tableId, proptags, offset, limit);
 	send<UnloadTableRequest>(homedir, lhtResponse.tableId);
