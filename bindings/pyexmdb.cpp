@@ -315,7 +315,8 @@ PYBIND11_MODULE(pyexmdb, m)
 	    .def(py::init<const std::string&, const std::string&, const std::string&, bool, uint8_t>(),
 	         py::arg("host"), py::arg("port"), py::arg("homedir"), py::arg("isPrivate"), py::arg("flags")=0)
 	    .def("createFolder", &ExmdbQueries::createFolder, release_gil(),
-	         py::arg("homedir"), py::arg("domainId"), py::arg("folderName"), py::arg("container"), py::arg("comment"))
+	         py::arg("homedir"), py::arg("domainId"), py::arg("folderName"), py::arg("container"), py::arg("comment"),
+	         py::arg("parentId")=0)
 	    .def("deleteFolder", &ExmdbQueries::deleteFolder, release_gil(),
 	        py::arg("homedir"), py::arg("folderId"), py::arg("clear")=false)
 	    .def("findFolder", &ExmdbQueries::findFolder, release_gil(),

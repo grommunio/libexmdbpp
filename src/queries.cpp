@@ -212,20 +212,23 @@ ExmdbQueries::PropvalTable ExmdbQueries::listFolders(const std::string& homedir,
  * @param      folderName  Name of the new folder
  * @param      container   Folder container class
  * @param      comment     Comment to attach
+ * @param      parentId    Id of the parent folder or 0 for IPM_SUBTREE
  *
  * @return     ID of the folder or 0 on error
  */
 uint64_t ExmdbQueries::createFolder(const std::string& homedir, uint32_t domainId,
-                                    const std::string& folderName, const std::string& container, const std::string& comment)
+                                    const std::string& folderName, const std::string& container, const std::string& comment,
+                                    uint64_t parentId)
 {
 	auto acResponse = send<AllocateCnRequest>(homedir);
 	std::vector<TaggedPropval> propvals;
 	uint64_t now = util::ntTime();
 	SizedXID xid(22, GUID::fromDomainId(domainId), util::valueToGc(be64toh(acResponse.changeNum)));
 	IOBuffer tmpbuff;
+	parentId = parentId? parentId : util::makeEidEx(1, PublicFid::IPMSUBTREE);
 	propvals.reserve(10);
 	tmpbuff.reserve(128);
-	propvals.emplace_back(PropTag::PARENTFOLDERID, util::makeEidEx(1, PublicFid::IPMSUBTREE));
+	propvals.emplace_back(PropTag::PARENTFOLDERID, parentId);
 	propvals.emplace_back(PropTag::FOLDERTYPE, FolderType::GENERIC);
 	propvals.emplace_back(PropTag::DISPLAYNAME, folderName, false);
 	propvals.emplace_back(PropTag::COMMENT, comment, false);

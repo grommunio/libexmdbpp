@@ -95,7 +95,7 @@ public:
 	static const std::vector<uint32_t> defaultFolderProps; ///< Default properties when querying folders
 	static const uint32_t ownerRights; ///< Default rights for folder owners
 
-	uint64_t createFolder(const std::string&, uint32_t, const std::string&, const std::string&, const std::string&);
+	uint64_t createFolder(const std::string&, uint32_t, const std::string&, const std::string&, const std::string&, uint64_t=0);
 	bool deleteFolder(const std::string&, uint64_t, bool=false);
 	PropvalTable findFolder(const std::string&, const std::string&, uint64_t=0, bool=true, uint32_t fuuz=0,
 	                        const std::vector<uint32_t>& = defaultFolderProps);
