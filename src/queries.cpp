@@ -285,23 +285,26 @@ ExmdbQueries::PropvalTable ExmdbQueries::getFolderMemberList(const std::string& 
 
 
 uint32_t ExmdbQueries::setFolderMember(const std::string& homedir, uint64_t folderId, const FolderMemberList::Member& existing,
-                                       uint32_t rights, bool remove)
+                                       uint32_t rights, PermissionMode mode)
 {
-	uint32_t modified = remove? existing.rights & ~rights : existing.rights | rights;
-	if(modified == existing.rights)
-		return modified;
+	if(mode == ADD)
+		rights |= existing.rights;
+	else if(mode == REMOVE)
+		rights = existing.rights & ~rights;
+	if(rights == existing.rights)
+		return rights;
 	PermissionData permissions[1];
-	if(modified == 0)
+	if(rights == 0)
 		permissions[0] = PermissionData(PermissionData::REMOVE_ROW, {TaggedPropval(PropTag::MEMBERID, existing.id)});
 	else if(!existing.id)
 		permissions[0] = PermissionData(PermissionData::ADD_ROW, {TaggedPropval(PropTag::SMTPADDRESS, existing.mail, false),
-		                            TaggedPropval(PropTag::MEMBERRIGHTS, modified)});
+		                            TaggedPropval(PropTag::MEMBERRIGHTS, rights)});
 	else
 		permissions[0] = PermissionData(PermissionData::MODIFY_ROW, {TaggedPropval(PropTag::SMTPADDRESS, existing.mail, false),
-		                            TaggedPropval(PropTag::MEMBERRIGHTS, modified),
+		                            TaggedPropval(PropTag::MEMBERRIGHTS, rights),
 		                            TaggedPropval(PropTag::MEMBERID, existing.id)});
 	send<UpdateFolderPermissionRequest>(homedir, folderId, false, permissions);
-	return modified;
+	return rights;
 }
 
 /**
@@ -311,19 +314,19 @@ uint32_t ExmdbQueries::setFolderMember(const std::string& homedir, uint64_t fold
  * @param      folderId  ID of the folder
  * @param      username  Username to add to list
  * @param      rights    Bitmask of member rights
- * @param      remove    Remove rights instead of adding them
+ * @param      mode      Whether to add, remove or overwrite permissions
  *
  * @return     New rights value
  */
 uint32_t ExmdbQueries::setFolderMember(const std::string& homedir, uint64_t folderId, const std::string& username,
-                                       uint32_t rights, bool remove)
+                                       uint32_t rights, PermissionMode mode)
 {
 	FolderMemberList members = getFolderMemberList(homedir, folderId);
 	auto it = std::find_if(members.members.begin(), members.members.end(),
 	                       [&username](const FolderMemberList::Member& m){return m.mail == username;});
 	FolderMemberList::Member existing = it == members.members.end()? FolderMemberList::Member() : *it;
 	existing.mail = username;
-	return setFolderMember(homedir, folderId, existing, rights, remove);
+	return setFolderMember(homedir, folderId, existing, rights, mode);
 }
 
 /**
@@ -333,19 +336,19 @@ uint32_t ExmdbQueries::setFolderMember(const std::string& homedir, uint64_t fold
  * @param      folderId  ID of the folder
  * @param      ID        ID of the member
  * @param      rights    Bitmask of member rights
- * @param      remove    Remove rights instead of adding them
+ * @param      mode      Whether to add, remove or overwrite permissions
  *
  * @return     New rights value
  */
 uint32_t ExmdbQueries::setFolderMember(const std::string& homedir, uint64_t folderId, uint64_t ID,
-                                       uint32_t rights, bool remove)
+                                       uint32_t rights, PermissionMode mode)
 {
 	FolderMemberList members = getFolderMemberList(homedir, folderId);
 	auto it = std::find_if(members.members.begin(), members.members.end(),
 	                       [ID](const FolderMemberList::Member& m){return m.id == ID;});
 	if(it == members.members.end())
 		return 0;
-	return setFolderMember(homedir, folderId, *it, rights, remove);
+	return setFolderMember(homedir, folderId, *it, rights, mode);
 }
 
 /**

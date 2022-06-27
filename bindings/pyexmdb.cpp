@@ -308,8 +308,15 @@ PYBIND11_MODULE(pyexmdb, m)
 	        .value("EQ", Restriction::EQ)
 	        .value("NE", Restriction::NE);
 
-	py::class_<ExmdbQueries>(m, "ExmdbQueries", "Main exmdb client interface")
-	    .def_readonly_static("defaultFolderProps", &ExmdbQueries::defaultFolderProps)
+	py::class_<ExmdbQueries> exmdbQueries(m, "ExmdbQueries", "Main exmdb client interface");
+
+	py::enum_<ExmdbQueries::PermissionMode>(exmdbQueries, "PermissionMode")
+	        .value("ADD", ExmdbQueries::PermissionMode::ADD)
+	        .value("REMOVE", ExmdbQueries::PermissionMode::REMOVE)
+	        .value("SET", ExmdbQueries::PermissionMode::SET)
+	        .export_values();
+
+	exmdbQueries.def_readonly_static("defaultFolderProps", &ExmdbQueries::defaultFolderProps)
 	    .def_readonly_static("ownerRights", &ExmdbQueries::ownerRights)
 	    .def_readonly_static("AUTO_RECONNECT", &ExmdbQueries::AUTO_RECONNECT)
 	    .def(py::init<const std::string&, const std::string&, const std::string&, bool, uint8_t>(),
@@ -343,12 +350,12 @@ PYBIND11_MODULE(pyexmdb, m)
 	    .def("resyncDevice", &ExmdbQueries::resyncDevice, release_gil(),
 	         py::arg("homedir"), py::arg("folderName"), py::arg("deviceId"), py::arg("userId"))
 	    .def("setFolderMember",
-	         py::overload_cast<const std::string&, uint64_t, uint64_t, uint32_t, bool>(&ExmdbQueries::setFolderMember),
-	         py::arg("homedir"), py::arg("folderId"), py::arg("ID"), py::arg("rights"), py::arg("remove")=false,
+	         py::overload_cast<const std::string&, uint64_t, uint64_t, uint32_t, ExmdbQueries::PermissionMode>(&ExmdbQueries::setFolderMember),
+	         py::arg("homedir"), py::arg("folderId"), py::arg("ID"), py::arg("rights"), py::arg("mode")=ExmdbQueries::ADD,
 	         release_gil())
 	    .def("setFolderMember",
-	         py::overload_cast<const std::string&, uint64_t, const std::string&, uint32_t, bool>(&ExmdbQueries::setFolderMember),
-	         py::arg("homedir"), py::arg("folderId"), py::arg("username"), py::arg("rights"), py::arg("remove")=false,
+	         py::overload_cast<const std::string&, uint64_t, const std::string&, uint32_t, ExmdbQueries::PermissionMode>(&ExmdbQueries::setFolderMember),
+	         py::arg("homedir"), py::arg("folderId"), py::arg("username"), py::arg("rights"), py::arg("mode")=ExmdbQueries::ADD,
 	         release_gil())
 	    .def("setFolderMembers", &ExmdbQueries::setFolderMembers, release_gil(),
 	         py::arg("homedir"), py::arg("folderId"), py::arg("usernames"), py::arg("rights"))

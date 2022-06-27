@@ -95,6 +95,13 @@ public:
 	static const std::vector<uint32_t> defaultFolderProps; ///< Default properties when querying folders
 	static const uint32_t ownerRights; ///< Default rights for folder owners
 
+	enum PermissionMode
+	{
+		ADD = 0,
+		REMOVE = 1,
+		SET = 2
+	};
+
 	uint64_t createFolder(const std::string&, uint32_t, const std::string&, const std::string&, const std::string&, uint64_t=0);
 	bool deleteFolder(const std::string&, uint64_t, bool=false);
 	PropvalTable findFolder(const std::string&, const std::string&, uint64_t=0, bool=true, uint32_t fuuz=0,
@@ -110,15 +117,15 @@ public:
 	void removeStoreProperties(const std::string&, const std::vector<uint32_t>&);
 	void removeDevice(const std::string&, const std::string&, const std::string&);
 	bool resyncDevice(const std::string&, const std::string&, const std::string&, uint32_t);
-	uint32_t setFolderMember(const std::string&, uint64_t, const std::string&, uint32_t, bool);
-	uint32_t setFolderMember(const std::string&, uint64_t, uint64_t, uint32_t, bool);
+	uint32_t setFolderMember(const std::string&, uint64_t, const std::string&, uint32_t, PermissionMode=ADD);
+	uint32_t setFolderMember(const std::string&, uint64_t, uint64_t, uint32_t, PermissionMode=ADD);
 	size_t setFolderMembers(const std::string&, uint64_t, const std::vector<std::string>&, uint32_t);
 	ProblemList setFolderProperties(const std::string&, uint32_t, uint64_t, const std::vector<structures::TaggedPropval>&);
 	ProblemList setStoreProperties(const std::string&, uint32_t, const std::vector<structures::TaggedPropval>&);
 	void unloadStore(const std::string&);
 
 private:
-	uint32_t setFolderMember(const std::string&, uint64_t, const FolderMemberList::Member&, uint32_t, bool);
+	uint32_t setFolderMember(const std::string&, uint64_t, const FolderMemberList::Member&, uint32_t, PermissionMode);
 };
 
 }
