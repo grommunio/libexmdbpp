@@ -347,6 +347,8 @@ PYBIND11_MODULE(pyexmdb, m)
 	         py::arg("homedir"), py::arg("proptags"))
 	    .def("removeDevice", &ExmdbQueries::removeDevice, release_gil(),
 	         py::arg("homedir"), py::arg("folderName"), py::arg("deviceId"))
+      .def("removeSyncStates", &ExmdbQueries::removeSyncStates, release_gil(),
+           py::arg("homedir"), py::arg("folderName"))
 	    .def("resyncDevice", &ExmdbQueries::resyncDevice, release_gil(),
 	         py::arg("homedir"), py::arg("folderName"), py::arg("deviceId"), py::arg("userId"))
 	    .def("setFolderMember",

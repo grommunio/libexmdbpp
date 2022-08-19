@@ -540,6 +540,23 @@ void ExmdbQueries::removeDevice(const std::string& homedir, const std::string& f
 }
 
 /**
+ * @brief       Remove sync states
+ *
+ * Deletes all sync states.
+ * If any device is still active, this results in a re-sync of the device.
+ *
+ * @param       homedir     Home directory path of the user
+ * @param       folderName  Name of the folder containing sync data
+ */
+void ExmdbQueries::removeSyncStates(const std::string& homedir, const std::string& folderName)
+{
+	uint64_t rootFolderId = util::makeEidEx(1, PublicFid::ROOT);
+	auto syncFolder = send<GetFolderByNameRequest>(homedir, rootFolderId, folderName);
+	send<EmptyFolderRequest>(homedir, 0, "", syncFolder.folderId, true, false, true, true);
+	send<DeleteFolderRequest>(homedir, 0, syncFolder.folderId, true);
+}
+
+/**
  * @brief        Resync device
  *
  * Deletes all sync states but keeps the device data.
