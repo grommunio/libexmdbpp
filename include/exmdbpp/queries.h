@@ -115,8 +115,8 @@ public:
 	PropvalTable listFolders(const std::string&, uint64_t, bool=false, const std::vector<uint32_t>& = defaultFolderProps,
 	                         uint32_t=0, uint32_t=0, const structures::Restriction& = structures::Restriction::XNULL());
 	void removeStoreProperties(const std::string&, const std::vector<uint32_t>&);
-	void removeDevice(const std::string&, const std::string&, const std::string&);
-	void removeSyncStates(const std::string&, const std::string&);
+	bool removeDevice(const std::string&, const std::string&, const std::string&);
+	bool removeSyncStates(const std::string&, const std::string&);
 	bool resyncDevice(const std::string&, const std::string&, const std::string&, uint32_t);
 	uint32_t setFolderMember(const std::string&, uint64_t, const std::string&, uint32_t, PermissionMode=ADD);
 	uint32_t setFolderMember(const std::string&, uint64_t, uint64_t, uint32_t, PermissionMode=ADD);

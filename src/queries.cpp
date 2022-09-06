@@ -530,13 +530,17 @@ ExmdbQueries::SyncData ExmdbQueries::getSyncData(const std::string& homedir, con
  * @param       folderName  Name of the folder containing sync data
  * @param       deviceId    Device ID string
  */
-void ExmdbQueries::removeDevice(const std::string& homedir, const std::string& folderName, const std::string& deviceId)
+bool ExmdbQueries::removeDevice(const std::string& homedir, const std::string& folderName, const std::string& deviceId)
 {
 	uint64_t rootFolderId = util::makeEidEx(1, PublicFid::ROOT);
 	auto syncFolder = send<GetFolderByNameRequest>(homedir, rootFolderId, folderName);
+	if(!syncFolder.folderId)
+		return true;
 	auto deviceFolder = send<GetFolderByNameRequest>(homedir, syncFolder.folderId, deviceId);
+	if(!deviceFolder.folderId)
+		return true;
 	send<EmptyFolderRequest>(homedir, 0, "", deviceFolder.folderId, true, false, true, false);
-	send<DeleteFolderRequest>(homedir, 0, deviceFolder.folderId, true);
+	return send<DeleteFolderRequest>(homedir, 0, deviceFolder.folderId, true).success;
 }
 
 /**
@@ -548,12 +552,14 @@ void ExmdbQueries::removeDevice(const std::string& homedir, const std::string& f
  * @param       homedir     Home directory path of the user
  * @param       folderName  Name of the folder containing sync data
  */
-void ExmdbQueries::removeSyncStates(const std::string& homedir, const std::string& folderName)
+bool ExmdbQueries::removeSyncStates(const std::string& homedir, const std::string& folderName)
 {
 	uint64_t rootFolderId = util::makeEidEx(1, PublicFid::ROOT);
 	auto syncFolder = send<GetFolderByNameRequest>(homedir, rootFolderId, folderName);
+	if(!syncFolder.folderId)
+		return true;
 	send<EmptyFolderRequest>(homedir, 0, "", syncFolder.folderId, true, false, true, true);
-	send<DeleteFolderRequest>(homedir, 0, syncFolder.folderId, true);
+	return send<DeleteFolderRequest>(homedir, 0, syncFolder.folderId, true).success;
 }
 
 /**
