@@ -34,7 +34,7 @@ if(pybind11_FOUND)
     endif(BUILD_PYEXMDB)
 endif(pybind11_FOUND)
 
-option(INSTALL_DEVFILES "Install libexmdbpp headers and CMake targets" OFF)
+option(INSTALL_DEVFILES "Install libexmdbpp headers and CMake targets" ON)
 if(INSTALL_DEVFILES)
     set(INSTALL_CMAKE_DIR ${CMAKE_INSTALL_DATADIR}/exmdbpp/cmake)
     include(CMakePackageConfigHelpers)
