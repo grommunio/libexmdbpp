@@ -70,7 +70,7 @@ public:
 	static const char* typeName(uint16_t);
 
 	uint32_t tag = 0; ///< Tag identifier
-	uint16_t type = 0; ///< Type of the tag (either derived from tag or explicitely specified if tag type is UNSPECIFIED)
+	uint16_t type = 0; ///< Type of the tag (either derived from tag or explicitly specified if tag type is UNSPECIFIED)
 
 	union Value
 	{
@@ -177,7 +177,7 @@ struct PropertyName
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
- * @brief      Problem that occured while setting store properties
+ * @brief      Problem that occurred while setting store properties
  */
 struct PropertyProblem
 {

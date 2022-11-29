@@ -501,7 +501,7 @@ std::string TaggedPropval::printValue() const
 /**
  * @brief      Convert value to string
  *
- * Generates string represntation of the contained value.
+ * Generates string representation of the contained value.
  * In contrast to printValue(), the value is not interpreted but converted according to its type
  * (i.e. timestamps are not converted into human readable format, etc).
  *
@@ -989,7 +989,7 @@ Restriction Restriction::EXIST(uint32_t proptag)
 /**
  * @brief       Create a new SUBOBJECT restriction
  *
- * Apply restriction to a specifig subobject. Possible subobjects are
+ * Apply restriction to a specific subobject. Possible subobjects are
  * `MESSAGERECIPIENTS` and `MESSAGEATTACHMENTS` properties.
  *
  * @param       res         Restriction to apply

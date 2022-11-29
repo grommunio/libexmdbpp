@@ -132,9 +132,9 @@ TableResponse::TableResponse(IOBuffer& buff)
  *
  * Provides serialization of call ID and parameters.
  *
- * Must be explicitely instantiated to be available to the linker.
+ * Must be explicitly instantiated to be available to the linker.
  *
- * @param      buf   Buffer to wirte serialization to
+ * @param      buf   Buffer to write serialization to
  * @param      args  The arguments
  *
  * @tparam     ID    RPC call ID

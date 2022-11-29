@@ -75,7 +75,7 @@ ExmdbClient::Connection::~Connection()
 {close();}
 
 /**
- * @brief      Move constuctor
+ * @brief      Move constructor
  *
  * @param      Connection to move from
  */
@@ -208,7 +208,7 @@ ExmdbClient::ConnParm::ConnParm(const std::string& host, const std::string& port
 /**
  * @brief      Initialize client and connect to server
  *
- * @param      host       Server adress
+ * @param      host       Server address
  * @param      port       Server port
  * @param      prefix     Data area prefix (passed to ConnectRecquest)
  * @param      isPrivate  Whether to access private or public data (passed to ConnectRequest)
@@ -220,7 +220,7 @@ ExmdbClient::ExmdbClient(const std::string& host, const std::string& port, const
 /**
  * @brief      Connect to server
  *
- * @param      host       Server adress
+ * @param      host       Server address
  * @param      port       Server port
  * @param      prefix     Data area prefix (passed to ConnectRecquest)
  * @param      isPrivate  Whether to access private or public data (passed to ConnectRequest)
