@@ -769,6 +769,8 @@ const char* TaggedPropval::typeName(uint16_t type)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+const GUID GUID::PSETID_GROMOX{0x1DE937E2, 0x85C6, 0x40A1, {0xBD, 0x9D}, {0xA6, 0xE2, 0xB7, 0xB7, 0x87, 0xB1}};
+
 /**
  * @brief      Initialize GUID from string
  *
@@ -1271,10 +1273,10 @@ void IOBuffer::Serialize<PropertyName>::push(IOBuffer& buff, const PropertyName&
 		return buff.push(pn.lid);
 	if(pn.kind != PropertyName::NAME)
 		return;
-	if(pn.name.size() > std::numeric_limits<uint8_t>::max())
+	if(pn.name.size() > std::numeric_limits<uint8_t>::max()-1)
 		throw std::range_error("Cannot serialize named property: Name too long ("+std::to_string(pn.name.size())+
-	                           "vs 255 chars)");
-	buff.push(uint8_t(pn.name.size()), pn.name);
+	                           "vs 254 chars)");
+	buff.push(uint8_t(pn.name.size()+1), pn.name);
 }
 
 }

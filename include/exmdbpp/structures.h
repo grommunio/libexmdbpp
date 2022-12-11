@@ -125,6 +125,8 @@ struct GUID
 
 	static constexpr GUID fromDomainId(uint32_t);
 	static GUID fromString(const std::string&);
+
+	static const GUID PSETID_GROMOX;
 };
 
 /**
@@ -390,7 +392,7 @@ constexpr GUID GUID::fromDomainId(uint32_t domainId)
 
 
 inline PropertyName::PropertyName(const GUID& guid, uint32_t lid) : kind(PropertyName::ID), guid(guid), lid(lid) {}
-inline PropertyName::PropertyName(const GUID& guid, const std::string& name) : kind(PropertyName::ID), guid(guid), name(name) {}
+inline PropertyName::PropertyName(const GUID& guid, const std::string& name) : kind(PropertyName::NAME), guid(guid), name(name) {}
 
 }
 

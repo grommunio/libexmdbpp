@@ -9,7 +9,6 @@
 namespace exmdbpp
 {
 
-
 /**
  * @brief   Higher level implementation of multi-request queries
  */
@@ -22,8 +21,8 @@ namespace queries
 struct Folder
 {
 	Folder() = default;
-	Folder(const std::vector<structures::TaggedPropval>&);
-	Folder(const requests::PropvalResponse&);
+	Folder(const std::vector<structures::TaggedPropval>&, uint32_t=0);
+	Folder(const requests::PropvalResponse&, uint32_t=0);
 
 	uint64_t folderId = 0;
 	uint64_t parentId = 0;
@@ -31,8 +30,9 @@ struct Folder
 	std::string comment;
 	uint64_t creationTime = 0;
 	std::string container;
+	bool syncToMobile = false;
 private:
-	void init(const std::vector<structures::TaggedPropval>&);
+	void init(const std::vector<structures::TaggedPropval>&, uint32_t=0);
 };
 
 /**
@@ -43,8 +43,8 @@ private:
  */
 struct FolderList
 {
-	FolderList(const requests::Response_t<requests::QueryTableRequest>&);
-	FolderList(const std::vector<std::vector<structures::TaggedPropval>>&);
+	FolderList(const requests::Response_t<requests::QueryTableRequest>&, uint32_t=0);
+	FolderList(const std::vector<std::vector<structures::TaggedPropval>>&, uint32_t=0);
 
 	std::vector<Folder> folders;
 };
@@ -117,6 +117,7 @@ public:
 	void removeStoreProperties(const std::string&, const std::vector<uint32_t>&);
 	bool removeDevice(const std::string&, const std::string&, const std::string&);
 	bool removeSyncStates(const std::string&, const std::string&);
+	std::vector<uint16_t> resolveNamedProperties(const std::string&, bool, const std::vector<structures::PropertyName>&);
 	bool resyncDevice(const std::string&, const std::string&, const std::string&, uint32_t);
 	uint32_t setFolderMember(const std::string&, uint64_t, const std::string&, uint32_t, PermissionMode=ADD);
 	uint32_t setFolderMember(const std::string&, uint64_t, uint64_t, uint32_t, PermissionMode=ADD);

@@ -30,8 +30,8 @@ const uint32_t ExmdbQueries::ownerRights = 0x000007fb;
  *
  * @param      propvals     List of TaggedPropvals
  */
-Folder::Folder(const std::vector<TaggedPropval>& propvals)
-{init(propvals);}
+Folder::Folder(const std::vector<TaggedPropval>& propvals, uint32_t syncToMobileTag)
+{init(propvals, syncToMobileTag);}
 
 
 /**
@@ -39,18 +39,23 @@ Folder::Folder(const std::vector<TaggedPropval>& propvals)
  *
  * @param      response     Response to convert
  */
-Folder::Folder(const PropvalResponse& response)
-{init(response.propvals);}
+Folder::Folder(const PropvalResponse& response, uint32_t syncToMobileTag)
+{init(response.propvals, syncToMobileTag);}
 
 /**
  * @brief     Initialize from tagged propval array
  *
  * @param      propvals     List of TaggedPropvals
  */
-void Folder::init(const std::vector<structures::TaggedPropval>& propvals)
+void Folder::init(const std::vector<structures::TaggedPropval>& propvals, uint32_t syncToMobileTag)
 {
 	for(const TaggedPropval& tp : propvals)
 	{
+		if(tp.tag == syncToMobileTag)
+		{
+			syncToMobile = tp.value.u8;
+			continue;
+		}
 		switch(tp.tag)
 		{
 		case PropTag::FOLDERID:
@@ -74,7 +79,8 @@ void Folder::init(const std::vector<structures::TaggedPropval>& propvals)
  *
  * @param      response  Response to convert
  */
-FolderList::FolderList(const Response_t<QueryTableRequest>& response) : FolderList(response.entries)
+FolderList::FolderList(const Response_t<QueryTableRequest>& response, uint32_t syncToMobileTag) :
+      FolderList(response.entries, syncToMobileTag)
 {}
 
 /**
@@ -82,11 +88,11 @@ FolderList::FolderList(const Response_t<QueryTableRequest>& response) : FolderLi
  *
  * @param      table     Table of propvals to interpret
  */
-FolderList::FolderList(const std::vector<std::vector<structures::TaggedPropval>>& table)
+FolderList::FolderList(const std::vector<std::vector<structures::TaggedPropval>>& table, uint32_t syncToMobileTag)
 {
 	folders.reserve(table.size());
 	for(auto& entry : table)
-		 folders.emplace_back(entry);
+		 folders.emplace_back(entry, syncToMobileTag);
 }
 
 /**
@@ -561,6 +567,19 @@ bool ExmdbQueries::removeSyncStates(const std::string& homedir, const std::strin
 	send<EmptyFolderRequest>(homedir, 0, "", syncFolder.folderId, true, false, true, true);
 	return send<DeleteFolderRequest>(homedir, 0, syncFolder.folderId, true).success;
 }
+
+/**
+ * @brief      Get named property IDs
+ *
+ * @param      homedir      Home directory path of the user
+ * @param      create       Whether to implicitely create requested properties
+ * @param      propnames    Names to resolve
+ *
+ * @return     List of tag IDs
+ */
+std::vector<uint16_t> ExmdbQueries::resolveNamedProperties(const std::string& homedir, bool create,
+                                                           const std::vector<PropertyName>& propnames)
+{return send<GetNamedPropIdsRequest>(homedir, create, propnames).propIds;}
 
 /**
  * @brief        Resync device

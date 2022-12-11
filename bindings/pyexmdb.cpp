@@ -347,8 +347,10 @@ PYBIND11_MODULE(pyexmdb, m)
 	         py::arg("homedir"), py::arg("proptags"))
 	    .def("removeDevice", &ExmdbQueries::removeDevice, release_gil(),
 	         py::arg("homedir"), py::arg("folderName"), py::arg("deviceId"))
-      .def("removeSyncStates", &ExmdbQueries::removeSyncStates, release_gil(),
-           py::arg("homedir"), py::arg("folderName"))
+	    .def("removeSyncStates", &ExmdbQueries::removeSyncStates, release_gil(),
+	         py::arg("homedir"), py::arg("folderName"))
+	    .def("resolveNamedProperties", &ExmdbQueries::resolveNamedProperties, release_gil(),
+	         py::arg("homedir"), py::arg("create"), py::arg("propnames"))
 	    .def("resyncDevice", &ExmdbQueries::resyncDevice, release_gil(),
 	         py::arg("homedir"), py::arg("folderName"), py::arg("deviceId"), py::arg("userId"))
 	    .def("setFolderMember",
@@ -370,17 +372,18 @@ PYBIND11_MODULE(pyexmdb, m)
 
 	py::class_<Folder>(m, "Folder")
 	        .def(py::init())
-	        .def(py::init<ExmdbQueries::PropvalList>(), py::arg("propvalList"))
+	        .def(py::init<ExmdbQueries::PropvalList, uint32_t>(), py::arg("propvalList"), py::arg("syncToMobileTag")=0)
 	        .def_readwrite("folderId", &Folder::folderId)
 	        .def_readwrite("displayName", &Folder::displayName)
 	        .def_readwrite("comment", &Folder::comment)
 	        .def_readwrite("creationTime", &Folder::creationTime)
 	        .def_readwrite("container", &Folder::container)
 	        .def_readwrite("parentId", &Folder::parentId)
+	        .def_readwrite("syncToMobile", &Folder::syncToMobile)
 	        .def("__repr__", &Folder_repr);
 
 	py::class_<FolderList>(m, "FolderList")
-	        .def(py::init<const ExmdbQueries::PropvalTable&>())
+	        .def(py::init<const ExmdbQueries::PropvalTable&, uint32_t>(), py::arg("table"), py::arg("syncToMobileTag")=0)
 	        .def_readonly("folders", &FolderList::folders)
 	        .def("__repr__", &FolderList_repr);
 
@@ -394,6 +397,13 @@ PYBIND11_MODULE(pyexmdb, m)
 	        .def_readonly("name", &FolderMemberList::Member::name)
 	        .def_readonly("rights", &FolderMemberList::Member::rights)
 	        .def_property_readonly("special", &FolderMemberList::Member::special);
+
+	py::class_<GUID>(m, "GUID")
+	        .def_readonly_static("PSETID_GROMOX", &GUID::PSETID_GROMOX);
+
+	py::class_<PropertyName>(m, "PropertyName")
+	        .def(py::init<const GUID&, uint32_t>())
+	        .def(py::init<const GUID&, const std::string&>());
 
 	py::class_<PropertyProblem>(m, "PropertyProblem")
 	        .def_readwrite("err", &PropertyProblem::err)
