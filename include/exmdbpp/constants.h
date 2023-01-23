@@ -38,7 +38,6 @@ static const uint8_t EMPTY_FOLDER = 0x1b;
 static const uint8_t DELETE_MESSAGES = 0x23;
 static const uint8_t LOAD_HIERARCHY_TABLE = 0x26;
 static const uint8_t LOAD_CONTENT_TABLE = 0x28;
-static const uint8_t LOAD_PERMISSION_TABLE = 0x29;
 static const uint8_t UNLOAD_TABLE = 0x2b;
 static const uint8_t QUERY_TABLE = 0x2d;
 static const uint8_t LOAD_MESSAGE_INSTANCE = 0x39;
@@ -51,6 +50,7 @@ static const uint8_t GET_MESSAGE_PROPERTIES = 0x57;
 static const uint8_t ALLOCATE_CN = 0x5c;
 static const uint8_t UPDATE_FOLDER_PERMISSION = 0x6a;
 static const uint8_t READ_MESSAGE = 0x6f;
+static const uint8_t LOAD_PERMISSION_TABLE = 0x7d; //was 0x29, changed table_flags from uint8_t to uint32_t
 static const uint8_t UNLOAD_STORE = 0x80;
 }
 

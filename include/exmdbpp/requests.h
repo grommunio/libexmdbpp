@@ -757,12 +757,12 @@ struct Response<LoadMessageInstanceRequest::callId>
  *
  * @param   string      homedir
  * @param   uint64_t    folderId
- * @param   uint8_t     tableFlags
+ * @param   uint32_t     tableFlags
  *
  * @return  LoadTableResponse
  */
 struct LoadPermissionTableRequest : public Request<constants::CallId::LOAD_PERMISSION_TABLE,
-        uint64_t, uint8_t>
+        uint64_t, uint32_t>
 {};
 
 /**

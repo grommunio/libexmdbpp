@@ -258,7 +258,7 @@ template struct Request<constants::CallId::GET_STORE_ALL_PROPTAGS>;
 template struct Request<constants::CallId::GET_STORE_PROPERTIES, uint32_t, Collection<uint16_t, uint32_t>>;
 template struct Request<constants::CallId::LOAD_HIERARCHY_TABLE, uint64_t, std::string, uint8_t>;
 template struct Request<constants::CallId::LOAD_MESSAGE_INSTANCE, std::string, uint32_t, bool, uint64_t, uint64_t>;
-template struct Request<constants::CallId::LOAD_PERMISSION_TABLE, uint64_t, uint8_t>;
+template struct Request<constants::CallId::LOAD_PERMISSION_TABLE, uint64_t, uint32_t>;
 template struct Request<constants::CallId::QUERY_FOLDER_MESSAGES, uint64_t>;
 template struct Request<constants::CallId::QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE, uint32_t, Collection<uint16_t, uint32_t>, uint32_t, uint32_t>;
 template struct Request<constants::CallId::QUERY_TABLE, std::string, uint32_t, uint32_t, Collection<uint16_t, uint32_t>, uint32_t, uint32_t>;
