@@ -6,3 +6,6 @@
 /cmake_install.cmake
 /libexmdbpp.so
 /libexmdbpp.so.0
+/exmdbppConfig.cmake
+/exmdbppConfigVersion.cmake
+/pyexmdb.*.so
