@@ -2,6 +2,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  * SPDX-FileCopyrightText: 2020-2021 grommunio GmbH
  */
+#include <cstdint>
 #include <cstring>
 #include <cstddef>
 #include <limits>

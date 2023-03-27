@@ -5,7 +5,7 @@
 #include "requests.h"
 #include "IOBufferImpl.h"
 #include "constants.h"
-
+#include <cstdint>
 #include <random>
 #include <chrono>
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <array>
-
+#include <cstdint>
 #include "IOBuffer.h"
 #include <endian.h>
 

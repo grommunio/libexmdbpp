@@ -4,6 +4,7 @@
  */
 
 #include <algorithm>
+#include <cstdint>
 #include <unordered_set>
 
 #include "queries.h"
