@@ -330,7 +330,8 @@ uint32_t ExmdbQueries::setFolderMember(const std::string& homedir, uint64_t fold
 {
 	FolderMemberList members = getFolderMemberList(homedir, folderId);
 	auto it = std::find_if(members.members.begin(), members.members.end(),
-	                       [&username](const FolderMemberList::Member& m){return m.mail == username;});
+	                       [&username](const FolderMemberList::Member& m)
+	                       {return !strcasecmp(m.mail.c_str(), username.c_str());});
 	FolderMemberList::Member existing = it == members.members.end()? FolderMemberList::Member() : *it;
 	existing.mail = username;
 	return setFolderMember(homedir, folderId, existing, rights, mode);
