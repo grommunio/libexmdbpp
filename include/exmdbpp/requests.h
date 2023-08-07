@@ -418,20 +418,27 @@ struct Response<DeleteMessagesRequest::callId>
 /**
  * @brief   Empty a folder
  *
+ *
  * @param   string      homedir
  * @param   uint32_t    cpid
  * @param   string      username
  * @param   uint64_t    folderId
- * @param   bool        hard
- * @param   bool        normal
- * @param   bool        associated
- * @param   bool        sub
+ * @param   uint32_t    flags
  *
  * @return  Response<EmptyFolderRequest::callId>
  */
 struct EmptyFolderRequest : public Request<constants::CallId::EMPTY_FOLDER,
-        uint32_t, std::string, uint64_t, bool, bool, bool, bool>
-{};
+        uint32_t, std::string, uint64_t, uint32_t>
+{
+	enum DeleteFlags : uint32_t
+	{
+		DEL_MESSAGES = 0x1,
+		DEL_FOLDERS =  0x4,
+		DEL_ASSOCIATED = 0x8,
+		HARD_DELETE = 0x10,
+		ALL = DEL_MESSAGES | DEL_FOLDERS | DEL_ASSOCIATED | HARD_DELETE,
+	};
+};
 
 template<>
 struct Response<EmptyFolderRequest::callId>

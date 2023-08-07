@@ -246,7 +246,7 @@ template struct Request<constants::CallId::ALLOCATE_CN>;
 template struct Request<constants::CallId::CREATE_FOLDER_BY_PROPERTIES, uint32_t, Collection<uint16_t, structures::TaggedPropval>>;
 template struct Request<constants::CallId::DELETE_FOLDER, uint32_t, uint64_t, bool>;
 template struct Request<constants::CallId::DELETE_MESSAGES, uint32_t, uint32_t, const std::string&, uint64_t, Collection<uint32_t, uint64_t>, bool>;
-template struct Request<constants::CallId::EMPTY_FOLDER, uint32_t, std::string, uint64_t, bool, bool, bool, bool>;
+template struct Request<constants::CallId::EMPTY_FOLDER, uint32_t, std::string, uint64_t, uint32_t>;
 template struct Request<constants::CallId::GET_FOLDER_ALL_PROPTAGS, uint64_t>;
 template struct Request<constants::CallId::GET_FOLDER_BY_NAME, uint64_t, std::string>;
 template struct Request<constants::CallId::GET_FOLDER_PROPERTIES, uint32_t, uint64_t, Collection<uint16_t, uint32_t>>;

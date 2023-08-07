@@ -269,7 +269,7 @@ uint64_t ExmdbQueries::createFolder(const std::string& homedir, uint32_t domainI
 bool ExmdbQueries::deleteFolder(const std::string& homedir, uint64_t folderId, bool clear)
 {
 	if(clear)
-		send<EmptyFolderRequest>(homedir, 0, "", folderId, true, true, true, true);
+		send<EmptyFolderRequest>(homedir, 0, "", folderId, EmptyFolderRequest::ALL);
 	return send<DeleteFolderRequest>(homedir, 0, folderId, true).success;
 }
 
@@ -540,6 +540,7 @@ ExmdbQueries::SyncData ExmdbQueries::getSyncData(const std::string& homedir, con
  */
 bool ExmdbQueries::removeDevice(const std::string& homedir, const std::string& folderName, const std::string& deviceId)
 {
+	using Flags = EmptyFolderRequest::DeleteFlags;
 	uint64_t rootFolderId = util::makeEidEx(1, PublicFid::ROOT);
 	auto syncFolder = send<GetFolderByNameRequest>(homedir, rootFolderId, folderName);
 	if(!syncFolder.folderId)
@@ -547,7 +548,7 @@ bool ExmdbQueries::removeDevice(const std::string& homedir, const std::string& f
 	auto deviceFolder = send<GetFolderByNameRequest>(homedir, syncFolder.folderId, deviceId);
 	if(!deviceFolder.folderId)
 		return true;
-	send<EmptyFolderRequest>(homedir, 0, "", deviceFolder.folderId, true, false, true, false);
+	send<EmptyFolderRequest>(homedir, 0, "", deviceFolder.folderId, Flags::HARD_DELETE | Flags::DEL_ASSOCIATED);
 	return send<DeleteFolderRequest>(homedir, 0, deviceFolder.folderId, true).success;
 }
 
@@ -562,11 +563,13 @@ bool ExmdbQueries::removeDevice(const std::string& homedir, const std::string& f
  */
 bool ExmdbQueries::removeSyncStates(const std::string& homedir, const std::string& folderName)
 {
+	using Flags = EmptyFolderRequest::DeleteFlags;
 	uint64_t rootFolderId = util::makeEidEx(1, PublicFid::ROOT);
 	auto syncFolder = send<GetFolderByNameRequest>(homedir, rootFolderId, folderName);
 	if(!syncFolder.folderId)
 		return true;
-	send<EmptyFolderRequest>(homedir, 0, "", syncFolder.folderId, true, false, true, true);
+	send<EmptyFolderRequest>(homedir, 0, "", syncFolder.folderId,
+	                         Flags::HARD_DELETE | Flags::DEL_ASSOCIATED | Flags::DEL_FOLDERS);
 	return send<DeleteFolderRequest>(homedir, 0, syncFolder.folderId, true).success;
 }
 
