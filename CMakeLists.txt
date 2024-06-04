@@ -15,6 +15,7 @@ add_library(exmdbpp SHARED
             src/structures.cpp
             src/util.cpp)
 set_target_properties(exmdbpp PROPERTIES SOVERSION 0)
+target_compile_options(exmdbpp PRIVATE -Wall)
 target_include_directories(exmdbpp PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/exmdbpp>
                            $<INSTALL_INTERFACE:include/exmdbpp>)
