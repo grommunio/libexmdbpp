@@ -464,19 +464,6 @@ TaggedPropval& TaggedPropval::operator=(TaggedPropval&& tp) noexcept
 TaggedPropval::~TaggedPropval()
 {free();}
 
-static std::string hexData(const uint8_t* data, uint32_t len)
-{
-	static const char* digits = "0123456789ABCDEF";
-	std::string str;
-	str.reserve(len*2);
-	for(const uint8_t* end = data+len; data < end; ++data)
-	{
-		str += digits[*data>>4];
-		str += digits[*data&0xF];
-	}
-	return str;
-}
-
 /**
  * @brief      Generate string representation of contained value
  *
