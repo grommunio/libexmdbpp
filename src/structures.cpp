@@ -604,10 +604,10 @@ void TaggedPropval::copyValue(const TaggedPropval& tp)
 	}
 	else if(type == PropvalType::BINARY_ARRAY)
 	{
-		copyData(nullptr, tp.value.data.count(), alignof(VArray<uint8_t>));
+		copyData(tp.value.adata.first, tp.value.adata.count()*sizeof(VArray<uint8_t>), alignof(VArray<uint8_t>));
 		for(uint32_t i = 0; i < value.adata.count(); ++i)
 		{
-			uint32_t len = value.adata.first[i].count();
+			uint32_t len = tp.value.adata.first[i].count();
 			value.adata.first[i] = VArray<uint8_t>(new uint8_t[len], len);
 			memcpy(value.adata.first[i].first, tp.value.adata.first[i].first, len);
 		}
