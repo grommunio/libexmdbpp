@@ -647,7 +647,7 @@ void TaggedPropval::free()
 			delete[] bin.first;
 	if(type == PropvalType::STRING || type == PropvalType::WSTRING)
 		delete[] value.str;
-	else if(PropvalType::isArray(type))
+	else if(PropvalType::isArray(type) || type == PropvalType::BINARY)
 		delete[] value.data.first;
 	value.zero();
 }
