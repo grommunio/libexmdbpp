@@ -195,8 +195,10 @@ py::object TaggedPropval_getValue(const TaggedPropval& tp)
 	}
 	case PropvalType::BINARY_ARRAY: {
 		py::list list(tp.count());
-		for(uint32_t i = 0; i < tp.count(); ++i)
-			list[i] = py::bytes(reinterpret_cast<const char*>(tp.binaryData()), tp.binaryLength());
+		for(uint32_t i = 0; i < tp.count(); ++i) {
+			auto& bin = tp.value.adata.first[i];
+			list[i] = py::bytes(reinterpret_cast<const char*>(bin.first), bin.count());
+		}
 		return list;
 	}
 	}
