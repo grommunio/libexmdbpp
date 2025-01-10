@@ -170,11 +170,15 @@ void ExmdbClient::Connection::connect(const std::string& host, const std::string
  */
 void ExmdbClient::Connection::send(IOBuffer& buff)
 {
-	ssize_t bytes = ::send(sock, buff.data(), buff.size(), MSG_NOSIGNAL);
-	if(bytes < 0)
-		throw ConnectionError("Send failed: "+std::string(strerror(errno)));
+	for(size_t sent = 0; sent < buff.size();)
+	{
+		ssize_t bytes = ::send(sock, buff.data()+sent, buff.size()-sent, MSG_NOSIGNAL);
+		if(bytes < 0)
+			throw ConnectionError("Send failed: "+std::string(strerror(errno)));
+		sent += bytes;
+	}
 	buff.resize(5);
-	bytes = recv(sock, buff.data(), 5, 0);
+	ssize_t bytes = recv(sock, buff.data(), 5, 0);
 	if(bytes < 0)
 		throw ConnectionError("Receive failed: "+std::string(strerror(errno)));
 	else if(bytes == 0)
