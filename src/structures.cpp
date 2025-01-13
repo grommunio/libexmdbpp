@@ -624,9 +624,9 @@ void TaggedPropval::copyValue(const TaggedPropval& tp)
  * @param      data  Data to copy
  * @param      len   Number of bytes
  */
-void TaggedPropval::copyData(const void* data, uint32_t len, size_t alignment)
+void TaggedPropval::copyData(const void* data, uint32_t len, size_t)
 {
-	value.data.first = new(std::align_val_t(alignment)) uint8_t[len];
+	value.data.first = new uint8_t[len];
 	value.data.second = value.data.first+len;
 	if(data)
 		memcpy(value.data.first, data, len);
