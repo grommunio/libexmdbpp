@@ -189,6 +189,8 @@ void ExmdbClient::Connection::send(IOBuffer& buff)
 	if(bytes < 5)
 		throw ConnectionError("Short read");
 	uint32_t length = buff.pop<uint32_t>();
+	if(length > 256U * 1024 * 1024)
+		throw ConnectionError("Response too large: "+std::to_string(length)+" bytes");
 	buff.reset();
 	buff.resize(length);
 	for(uint32_t offset = 0;offset < length;offset += bytes)
