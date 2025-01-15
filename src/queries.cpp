@@ -205,7 +205,8 @@ ExmdbQueries::PropvalTable ExmdbQueries::listFolders(const std::string& homedir,
                                                      const structures::Restriction& restriction)
 {
 	auto lhtResponse = send<LoadHierarchyTableRequest>(homedir, parent, "", recursive? TableFlags::DEPTH : 0, restriction);
-	limit = offset || limit || lhtResponse.rowCount < limit? limit : lhtResponse.rowCount;
+	if(limit == 0)
+		limit = lhtResponse.rowCount;
 	auto qtResponse = send<QueryTableRequest>(homedir, "", 0, lhtResponse.tableId, proptags, offset, limit);
 	send<UnloadTableRequest>(homedir, lhtResponse.tableId);
 	return std::move(qtResponse.entries);
