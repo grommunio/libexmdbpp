@@ -143,7 +143,9 @@ void ExmdbClient::Connection::connect(const std::string& host, const std::string
 		fcntl(sock, F_SETFL, flags | O_NONBLOCK);
 		::connect(sock, addr->ai_addr, addr->ai_addrlen);
 		fd.fd = sock;
-		res = poll(&fd, 1, 3000);
+		do {
+			res = poll(&fd, 1, 3000);
+		} while(res < 0 && errno == EINTR);
 		if(res == 1)
 			break;
 		error = errno;
@@ -173,12 +175,18 @@ void ExmdbClient::Connection::send(IOBuffer& buff)
 	for(size_t sent = 0; sent < buff.size();)
 	{
 		ssize_t bytes = ::send(sock, buff.data()+sent, buff.size()-sent, MSG_NOSIGNAL);
-		if(bytes < 0)
+		if(bytes < 0) {
+			if(errno == EINTR)
+				continue;
 			throw ConnectionError("Send failed: "+std::string(strerror(errno)));
+		}
 		sent += bytes;
 	}
 	buff.resize(5);
-	ssize_t bytes = recv(sock, buff.data(), 5, 0);
+	ssize_t bytes;
+	do {
+		bytes = recv(sock, buff.data(), 5, 0);
+	} while(bytes < 0 && errno == EINTR);
 	if(bytes < 0)
 		throw ConnectionError("Receive failed: "+std::string(strerror(errno)));
 	else if(bytes == 0)
@@ -196,8 +204,11 @@ void ExmdbClient::Connection::send(IOBuffer& buff)
 	for(uint32_t offset = 0;offset < length;offset += bytes)
 	{
 		bytes = recv(sock, buff.data()+offset, length-offset, 0);
-		if(bytes < 0)
+		if(bytes < 0) {
+			if(errno == EINTR)
+				continue;
 			throw ConnectionError("Message reception failed");
+		}
 		if(bytes == 0)
 			throw ConnectionError("Connection closed unexpectedly");
 	}
