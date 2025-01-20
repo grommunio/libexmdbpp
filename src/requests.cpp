@@ -145,11 +145,11 @@ void Request<ID, Args...>::Request:: write(IOBuffer& buf, const std::string& hom
 {buf.push(ID, homedir, args...);}
 
 
-static uint8_t SIDLEN = 15; ///< Length of the session ID
+static const uint8_t SIDLEN = 15; ///< Length of the session ID
 /// Available session ID characters
 static const std::string sidchars("0123456789abcdefghjklmnopqrstvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
 /// Rng used for session ID creation
-static std::mt19937_64 rng(ulong(std::chrono::system_clock::now().time_since_epoch().count()));
+static thread_local std::mt19937_64 rng(static_cast<unsigned long>(std::chrono::system_clock::now().time_since_epoch().count()));
 
 /**
  * @brief      Initialize a connection request
