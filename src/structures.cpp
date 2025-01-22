@@ -663,14 +663,14 @@ void TaggedPropval::free()
  */
 uint32_t TaggedPropval::count() const
 {
+	if(type == PropvalType::BINARY)
+		return value.data.first? value.data.count() : 0;
 	if(!PropvalType::isArray(type))
 		return 1;
 	if(value.data.first == nullptr)
 		return 0;
 	switch(type)
 	{
-	case PropvalType::BINARY:
-		return value.data.count();
 	case PropvalType::SHORT_ARRAY:
 		return value.a16.count();
 	case PropvalType::LONG_ARRAY:
