@@ -120,6 +120,23 @@ TaggedPropval TaggedPropval_init(uint32_t tag, const py::object& value) try
 			tp.value.astr.first[i] = copyStr(list[i].cast<std::string>().c_str());
 		return tp;
 	}
+	case PropvalType::BINARY_ARRAY: {
+		TaggedPropval tp;
+		tp.tag = tag;
+		tp.type = tag & 0xFFFF;
+		uint32_t count = uint32_t(list.size());
+		using BinArray = TaggedPropval::VArray<TaggedPropval::VArray<uint8_t>>;
+		auto* entries = new TaggedPropval::VArray<uint8_t>[count];
+		tp.value.adata = BinArray(entries, count);
+		for(uint32_t i = 0; i < count; ++i) {
+			std::string s = list[i].cast<std::string>();
+			uint32_t len = uint32_t(s.size());
+			auto* buf = new uint8_t[len];
+			memcpy(buf, s.data(), len);
+			entries[i] = TaggedPropval::VArray<uint8_t>(buf, len);
+		}
+		return tp;
+	}
 	}
 	throw py::value_error("Unsupported tag type");
 } catch (const py::cast_error&)
@@ -237,8 +254,8 @@ void TaggedPropval_setValue(TaggedPropval& tp, const py::object& value) try
 	case PropvalType::FLOATINGTIME_ARRAY:
 	case PropvalType::STRING_ARRAY:
 	case PropvalType::WSTRING_ARRAY:
-	//case PropvalType::BINARY_ARRAY: //No write support yet
-		tp = TaggedPropval_init(tp.tag, value); return; //Do not bother to modify in-place, just make a new one
+	case PropvalType::BINARY_ARRAY:
+		tp = TaggedPropval_init(tp.tag, value); return;
 	}
 	throw py::type_error("Tag type not supported for writing");
 } catch(const py::cast_error&)
