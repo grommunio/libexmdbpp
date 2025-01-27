@@ -610,8 +610,8 @@ std::vector<uint16_t> ExmdbQueries::resolveNamedProperties(const std::string& ho
 bool ExmdbQueries::resyncDevice(const std::string& homedir, const std::string& folderName, const std::string& deviceId,
                                 uint32_t userId)
 {
-	static const Restriction noDD = Restriction::PROPERTY(Restriction::NE, 0, TaggedPropval(PropTag::DISPLAYNAME, "devicedata"));
-	static const uint32_t midTag[] = {PropTag::MID};
+	const Restriction noDD = Restriction::PROPERTY(Restriction::NE, 0, TaggedPropval(PropTag::DISPLAYNAME, "devicedata"));
+	const uint32_t midTag[] = {PropTag::MID};
 	uint64_t rootFolderId = util::makeEidEx(1, PublicFid::ROOT);
 	auto syncFolder = send<GetFolderByNameRequest>(homedir, rootFolderId, folderName);
 	auto deviceFolder = send<GetFolderByNameRequest>(homedir, syncFolder.folderId, deviceId);
