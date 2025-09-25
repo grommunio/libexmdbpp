@@ -283,7 +283,7 @@ bool ExmdbQueries::deleteFolder(const std::string& homedir, uint64_t folderId, b
  */
 ExmdbQueries::PropvalTable ExmdbQueries::getFolderMemberList(const std::string& homedir, uint64_t folderId)
 {
-	auto lptResponse = send<LoadPermissionTableRequest>(homedir, folderId, 0);
+	auto lptResponse = send<LoadPermissionTableRequest>(homedir, folderId, 2);
 	uint32_t proptags[] = {PropTag::MEMBERID, PropTag::SMTPADDRESS, PropTag::MEMBERNAME, PropTag::MEMBERRIGHTS};
 	auto qtResponse = send<QueryTableRequest>(homedir, "", 0, lptResponse.tableId, proptags, 0, lptResponse.rowCount);
 	send<UnloadTableRequest>(homedir, lptResponse.tableId);
