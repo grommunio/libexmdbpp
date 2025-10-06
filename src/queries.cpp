@@ -381,8 +381,6 @@ size_t ExmdbQueries::setFolderMembers(const std::string& homedir, uint64_t folde
 	permissions.reserve(members.members.size()+usernames.size()); //Usually too much, but definitely enough.
 	for(const auto& member : members.members)
 	{
-		if(member.special())
-			continue;
 		bool contained = requested.erase(member.mail);
 		uint32_t newrights = contained? member.rights | rights : member.rights & ~rights;
 		if(newrights == member.rights)
