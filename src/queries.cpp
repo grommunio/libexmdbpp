@@ -419,6 +419,16 @@ ExmdbQueries::ProblemList ExmdbQueries::setStoreProperties(const std::string& ho
 void ExmdbQueries::unloadStore(const std::string& homedir)
 {send<UnloadStoreRequest>(homedir);}
 
+/**
+ * @brief      Get all folder proptags
+ *
+ * @param      homedir   Home directory path of the domain
+ * @param      folderId  ID of the folder
+ *
+ * @return     List prop tags
+ */
+ExmdbQueries::ProptagList ExmdbQueries::getAllFolderProperties(const std::string& homedir, uint64_t folderId)
+{return send<GetAllFolderPropertiesRequest>(homedir, folderId).proptags;}
 
 /**
  * @brief      Modify folder properties

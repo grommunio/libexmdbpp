@@ -334,6 +334,8 @@ PYBIND11_MODULE(pyexmdb, m)
 	         py::arg("homedir"))
 	    .def("getFolderMemberList", &ExmdbQueries::getFolderMemberList, release_gil(),
 	         py::arg("homedir"), py::arg("folderId"))
+	    .def("getAllFolderProperties", &ExmdbQueries::getAllFolderProperties, release_gil(),
+	         py::arg("homedir"), py::arg("folderId"))
 	    .def("getFolderProperties", &ExmdbQueries::getFolderProperties, release_gil(),
 	         py::arg("homedir"), py::arg("cpid"), py::arg("folderId"), py::arg("proptags") = ExmdbQueries::defaultFolderProps)
 	    .def("getStoreProperties", &ExmdbQueries::getStoreProperties, release_gil(),

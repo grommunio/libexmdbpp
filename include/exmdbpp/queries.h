@@ -109,6 +109,7 @@ public:
 	ProptagList getAllStoreProperties(const std::string&);
 	[[deprecated]] PropvalTable getFolderList(const std::string&, const std::vector<uint32_t>& = defaultFolderProps, uint32_t=0, uint32_t=0);
 	PropvalTable getFolderMemberList(const std::string&, uint64_t);
+	ProptagList getAllFolderProperties(const std::string&, uint64_t);
 	PropvalList getFolderProperties(const std::string&, uint32_t, uint64_t, const std::vector<uint32_t>& = defaultFolderProps);
 	SyncData getSyncData(const std::string&, const std::string&);
 	PropvalList getStoreProperties(const std::string&, uint32_t, const std::vector<uint32_t>&);
