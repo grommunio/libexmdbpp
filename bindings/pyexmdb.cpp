@@ -77,7 +77,7 @@ TaggedPropval TaggedPropval_init(uint32_t tag, const py::object& value) try
 	}
 	}
 	if(!py::isinstance<py::list>(value))
-		throw py::type_error("Cannot store value of type "+std::string(py::str(value.get_type()))+" in "+TaggedPropval::typeName(tag&0xFFFF)+" tag.");
+		throw py::type_error("Cannot store value of type "+std::string(py::str(py::type::of(value)))+" in "+TaggedPropval::typeName(tag&0xFFFF)+" tag.");
 	py::list list = value.cast<py::list>();
 	switch(PropvalType::tagType(tag))
 	{
@@ -141,7 +141,7 @@ TaggedPropval TaggedPropval_init(uint32_t tag, const py::object& value) try
 	throw py::value_error("Unsupported tag type");
 } catch (const py::cast_error&)
 {
-	std::string pytype = py::str(value.get_type());
+	std::string pytype = py::str(py::type::of(value));
 	throw py::type_error("Cannot store value of type "+pytype+" in "+TaggedPropval::typeName(tag&0xFFFF)+" tag.");
 }
 
@@ -260,7 +260,7 @@ void TaggedPropval_setValue(TaggedPropval& tp, const py::object& value) try
 	throw py::type_error("Tag type not supported for writing");
 } catch(const py::cast_error&)
 {
-	std::string pytype = py::str(value.get_type());
+	std::string pytype = py::str(py::type::of(value));
 	throw py::type_error("Cannot store value of type "+pytype+" in "+tp.typeName()+" tag.");
 }
 
