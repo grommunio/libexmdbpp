@@ -18,7 +18,6 @@ template<typename T, size_t N>
 struct IOBuffer::Serialize<std::array<T, N>>
 {static void push(IOBuffer&, const std::array<T, N>&);};
 
-
 /**
  * @brief      Push data into the buffer
  *
@@ -213,12 +212,19 @@ inline IOBuffer& operator>>(IOBuffer& buf, T& value)
  * specialization to prevent undefined behavior due to unexpected overload
  * resolution.
  *
+ * If an enum is encountered, it is forwarded to the underlying type specialization.
+ *
  * If no matching specialization is provided, an error is issued during compile
  * time.
  */
 template<typename T>
-inline void IOBuffer::Serialize<T>::push(IOBuffer&, const T&)
-{static_assert(sizeof(T) != sizeof(T), "Serialization of this type is not implemented");}
+inline void IOBuffer::Serialize<T>::push(IOBuffer& buff, const T& value)
+{
+	if constexpr(std::is_enum_v<T>)
+		IOBuffer::Serialize<std::underlying_type_t<T>>::push(buff, static_cast<const std::underlying_type_t<T>>(value));
+	else
+		static_assert(sizeof(T) != sizeof(T), "Serialization of this type is not implemented");
+}
 
 /**
  * @brief      Insert uint8_t value into IOBuffer
@@ -350,6 +356,7 @@ inline void IOBuffer::Serialize<std::array<T, N>>::push(IOBuffer& buff, const st
 	for(const T& value : values)
 		buff.push(value);
 }
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
