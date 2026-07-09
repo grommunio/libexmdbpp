@@ -1040,6 +1040,22 @@ struct UpdateFolderPermissionRequest : public Request<constants::CallId::UPDATE_
         uint64_t, bool, Collection<uint16_t, structures::PermissionData>>
 {};
 
+
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief   Read delegate or sendas list
+ *
+ * @param   string       homedir
+ * @param   DelegateMode Whether to return delegates or sendas users
+ *
+ * @return  NullResponse
+ *
+ */
+struct WriteDelegatesRequest : public Request<constants::CallId::WRITE_DELEGATES,
+        constants::DelegateMode, Collection<uint32_t, std::string>>
+{};
+
 }
 
 }

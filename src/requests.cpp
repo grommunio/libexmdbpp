@@ -277,5 +277,6 @@ template struct Request<constants::CallId::UNLOAD_STORE>;
 template struct Request<constants::CallId::UNLOAD_INSTANCE, uint32_t>;
 template struct Request<constants::CallId::UNLOAD_TABLE, uint32_t>;
 template struct Request<constants::CallId::UPDATE_FOLDER_PERMISSION, uint64_t, bool, Collection<uint16_t, structures::PermissionData>>;
+template struct Request<constants::CallId::WRITE_DELEGATES, constants::DelegateMode, Collection<uint32_t, std::string>>;
 
 }

@@ -377,6 +377,7 @@ PYBIND11_MODULE(pyexmdb, m)
 	         py::arg("homedir"), py::arg("create"), py::arg("propnames"))
 	    .def("resyncDevice", &ExmdbQueries::resyncDevice, release_gil(),
 	         py::arg("homedir"), py::arg("folderName"), py::arg("deviceId"), py::arg("userId"))
+	    .def("setDelegates", &ExmdbQueries::setDelegates, release_gil(), py::arg("homedir"), py::arg("users"))
 	    .def("setFolderMember",
 	         py::overload_cast<const std::string&, uint64_t, uint64_t, uint32_t, ExmdbQueries::PermissionMode>(&ExmdbQueries::setFolderMember),
 	         py::arg("homedir"), py::arg("folderId"), py::arg("ID"), py::arg("rights"), py::arg("mode")=ExmdbQueries::ADD,
@@ -389,6 +390,7 @@ PYBIND11_MODULE(pyexmdb, m)
 	         py::arg("homedir"), py::arg("folderId"), py::arg("usernames"), py::arg("rights"))
 	    .def("setFolderProperties", &ExmdbQueries::setFolderProperties, release_gil(),
 	         py::arg("homedir"), py::arg("cpid"), py::arg("folderId"), py::arg("propvals"))
+	    .def("setSendAs", &ExmdbQueries::setSendAs, release_gil(), py::arg("homedir"), py::arg("users"))
 	    .def("setStoreProperties", &ExmdbQueries::setStoreProperties, release_gil(),
 	         py::arg("homedir"), py::arg("cpid"), py::arg("propvals"))
 	    .def("unloadStore", &ExmdbQueries::unloadStore, release_gil(),

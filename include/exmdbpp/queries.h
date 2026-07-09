@@ -123,10 +123,12 @@ public:
 	bool removeSyncStates(const std::string&, const std::string&);
 	std::vector<uint16_t> resolveNamedProperties(const std::string&, bool, const std::vector<structures::PropertyName>&);
 	bool resyncDevice(const std::string&, const std::string&, const std::string&, uint32_t);
+	void setDelegates(const std::string&, const UserList&);
 	uint32_t setFolderMember(const std::string&, uint64_t, const std::string&, uint32_t, PermissionMode=ADD);
 	uint32_t setFolderMember(const std::string&, uint64_t, uint64_t, uint32_t, PermissionMode=ADD);
 	size_t setFolderMembers(const std::string&, uint64_t, const std::vector<std::string>&, uint32_t);
 	ProblemList setFolderProperties(const std::string&, uint32_t, uint64_t, const std::vector<structures::TaggedPropval>&);
+	void setSendAs(const std::string&, const UserList&);
 	ProblemList setStoreProperties(const std::string&, uint32_t, const std::vector<structures::TaggedPropval>&);
 	void unloadStore(const std::string&);
 

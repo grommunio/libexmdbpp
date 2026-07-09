@@ -647,4 +647,23 @@ bool ExmdbQueries::resyncDevice(const std::string& homedir, const std::string& f
 	return !send<DeleteMessagesRequest>(homedir, userId, 0, "", deviceFolder.folderId, mids, true).partial;
 }
 
+/**
+ * @brief      Set delegate list
+ *
+ * @param      homedir   Home directory path of the domain
+ * @param      users     List of usernames
+ */
+void ExmdbQueries::setDelegates(const std::string& homedir, const UserList& users)
+{send<WriteDelegatesRequest>(homedir, DelegateMode::DELEGATES, users);}
+
+
+/**
+ * @brief      Set send-as list
+ *
+ * @param      homedir   Home directory path of the domain
+ * @param      users     List of usernames
+ */
+void ExmdbQueries::setSendAs(const std::string& homedir, const UserList& users)
+{send<WriteDelegatesRequest>(homedir, DelegateMode::SENDAS, users);}
+
 }
