@@ -853,6 +853,28 @@ struct response_map<QueryTableRequest::callId>
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
+ * @brief   Read delegate or sendas list
+ *
+ * @param   string       homedir
+ * @param   DelegateMode Whether to return delegates or sendas users
+ *
+ * @return  Response<ReadDelegatesRequest::callId>
+ *
+ */
+struct ReadDelegatesRequest : public Request<constants::CallId::READ_DELEGATES, constants::DelegateMode>
+{};
+
+
+template<>
+struct Response<ReadDelegatesRequest::callId>
+{
+	explicit Response(IOBuffer&);
+
+	std::vector<std::string> userlist; ///< List of usernames in the delegates file
+};
+
+///////////////////////////////////////////////////////////////////////////////
+/**
  * @brief   Delete proptags from store
  *
  * @param   string      homedir

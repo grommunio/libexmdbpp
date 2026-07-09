@@ -239,6 +239,13 @@ Response<GetNamedPropIdsRequest::callId>::Response(IOBuffer& buff)
 		buff.pop(propId);
 }
 
+Response<ReadDelegatesRequest::callId>::Response(IOBuffer& buff)
+{
+	userlist.resize(buff.pop<uint32_t>());
+	for(std::string& user : userlist)
+		buff.pop(user);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Explicit template instantiations for requests
 
@@ -262,6 +269,7 @@ template struct Request<constants::CallId::LOAD_PERMISSION_TABLE, uint64_t, uint
 template struct Request<constants::CallId::QUERY_FOLDER_MESSAGES, uint64_t>;
 template struct Request<constants::CallId::QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE, uint32_t, Collection<uint16_t, uint32_t>, uint32_t, uint32_t>;
 template struct Request<constants::CallId::QUERY_TABLE, std::string, uint32_t, uint32_t, Collection<uint16_t, uint32_t>, uint32_t, uint32_t>;
+template struct Request<constants::CallId::READ_DELEGATES, constants::DelegateMode>;
 template struct Request<constants::CallId::REMOVE_STORE_PROPERTIES, Collection<uint16_t, uint32_t>>;
 template struct Request<constants::CallId::SET_FOLDER_PROPERTIES, uint32_t, uint64_t, Collection<uint16_t, structures::TaggedPropval>>;
 template struct Request<constants::CallId::SET_STORE_PROPERTIES, uint32_t, Collection<uint16_t, structures::TaggedPropval>>;

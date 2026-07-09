@@ -432,6 +432,16 @@ ExmdbQueries::ProptagList ExmdbQueries::getAllFolderProperties(const std::string
 {return send<GetAllFolderPropertiesRequest>(homedir, folderId).proptags;}
 
 /**
+ * @brief      Get delegate list
+ *
+ * @param      homedir   Home directory path of the domain
+ *
+ * @return     List of usernames in the delegates file
+ */
+ExmdbQueries::UserList ExmdbQueries::getDelegates(const std::string& homedir)
+{return send<ReadDelegatesRequest>(homedir, DelegateMode::DELEGATES).userlist;}
+
+/**
  * @brief      Modify folder properties
  *
  * @param      homedir   Home directory path of the domain
@@ -481,6 +491,16 @@ ExmdbQueries::PropvalList ExmdbQueries::getStoreProperties(const std::string& ho
  */
 ExmdbQueries::ProptagList ExmdbQueries::getAllStoreProperties(const std::string& homedir)
 {return send<GetAllStorePropertiesRequest>(homedir).proptags;}
+
+/**
+ * @brief      Get send-as list
+ *
+ * @param      homedir   Home directory path of the domain
+ *
+ * @return     List of usernames in the delegates file
+ */
+ExmdbQueries::UserList ExmdbQueries::getSendAs(const std::string& homedir)
+{return send<ReadDelegatesRequest>(homedir, DelegateMode::SENDAS).userlist;}
 
 /**
  * @brief      Remove store properties

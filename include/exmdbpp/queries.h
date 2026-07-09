@@ -89,6 +89,7 @@ public:
 	using PropvalTable = std::vector<PropvalList>; ///< Table of tagged propvals
 	using SyncData = std::unordered_map<std::string, std::string>;
 	using ProptagList = std::vector<uint32_t>; ///< List of tags
+	using UserList = std::vector<std::string>; ///< List of usernames
 
 	using ExmdbClient::ExmdbClient;
 
@@ -110,7 +111,9 @@ public:
 	[[deprecated]] PropvalTable getFolderList(const std::string&, const std::vector<uint32_t>& = defaultFolderProps, uint32_t=0, uint32_t=0);
 	PropvalTable getFolderMemberList(const std::string&, uint64_t);
 	ProptagList getAllFolderProperties(const std::string&, uint64_t);
+	UserList getDelegates(const std::string&);
 	PropvalList getFolderProperties(const std::string&, uint32_t, uint64_t, const std::vector<uint32_t>& = defaultFolderProps);
+	UserList getSendAs(const std::string&);
 	SyncData getSyncData(const std::string&, const std::string&);
 	PropvalList getStoreProperties(const std::string&, uint32_t, const std::vector<uint32_t>&);
 	PropvalTable listFolders(const std::string&, uint64_t, bool=false, const std::vector<uint32_t>& = defaultFolderProps,

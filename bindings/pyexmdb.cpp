@@ -361,6 +361,8 @@ PYBIND11_MODULE(pyexmdb, m)
 	         py::arg("homedir"), py::arg("cpid"), py::arg("proptags"))
 	    .def("getSyncData", &ExmdbQueries::getSyncData, release_gil(),
 	         py::arg("homedir"), py::arg("folderName"))
+	    .def("getDelegates", &ExmdbQueries::getDelegates, release_gil(), py::arg("homedir"))
+	    .def("getSendAs", &ExmdbQueries::getSendAs, release_gil(), py::arg("homedir"))
 	    .def("listFolders", &ExmdbQueries::listFolders, release_gil(),
 	         py::arg("homedir"), py::arg("folderId"), py::arg("recursive")=false,
 	         py::arg("proptags") = ExmdbQueries::defaultFolderProps, py::arg("offset")=0, py::arg("limit")=0,

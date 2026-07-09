@@ -52,6 +52,8 @@ static const uint8_t READ_MESSAGE = 0x6f;
 static const uint8_t LOAD_PERMISSION_TABLE = 0x7d; //was 0x29, changed table_flags from uint8_t to uint32_t
 static const uint8_t UNLOAD_STORE = 0x80;
 static const uint8_t EMPTY_FOLDER = 0x84;
+static const uint8_t READ_DELEGATES = 0x96;
+static const uint8_t WRITE_DELEGATES = 0x97;
 }
 
 namespace PublicFid
@@ -1036,5 +1038,10 @@ static const uint32_t PARENTDISPLAY = 0x0E05001F;
 static const uint32_t PARENTDISPLAY_STRING8 = 0x0E05001E;
 static const uint32_t CREATORSID = 0x0E580102;
 }
+
+enum class DelegateMode : uint32_t {
+	DELEGATES = 0,
+	SENDAS = 1,
+};
 
 }
