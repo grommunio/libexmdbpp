@@ -24,7 +24,7 @@ using namespace requests;
 using namespace constants;
 
 
-const uint8_t ExmdbClient::AUTO_RECONNECT = 1<<0; ///< Automatically reconnect on dispatch error
+const uint8_t ExmdbClient::AUTO_RECONNECT = 1<<0; ///< Automatically reconnect after an error response
 
 
 /**

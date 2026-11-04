@@ -87,9 +87,9 @@ inline requests::Response_t<Request> ExmdbClient::send(const Args&... args)
 	Request::write(buffer, args...);
 	buffer.finalize();
 	try {connection.send(buffer);}
-	catch (const ExmdbProtocolError& err)
+	catch (const ExmdbProtocolError&)
 	{
-		if (err.code == 8 && flags & AUTO_RECONNECT)  // DISPATCH_ERROR
+		if (flags & AUTO_RECONNECT && Request::callId != constants::CallId::CONNECT)
 			reconnect();
 		throw;
 	}
