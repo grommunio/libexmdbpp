@@ -201,7 +201,7 @@ void ExmdbClient::Connection::send(IOBuffer& buff)
 		throw ConnectionError("Response too large: "+std::to_string(length)+" bytes");
 	buff.reset();
 	buff.resize(length);
-	for(uint32_t offset = 0;offset < length;offset += bytes)
+	for(uint32_t offset = 0; offset < length;)
 	{
 		bytes = recv(sock, buff.data()+offset, length-offset, 0);
 		if(bytes < 0) {
@@ -211,6 +211,7 @@ void ExmdbClient::Connection::send(IOBuffer& buff)
 		}
 		if(bytes == 0)
 			throw ConnectionError("Connection closed unexpectedly");
+		offset += bytes;
 	}
 }
 
