@@ -126,33 +126,58 @@ void ExmdbClient::Connection::connect(const std::string& host, const std::string
 	addrinfo* addrs;
 	pollfd fd;
 	fd.events = POLLOUT;
-	int error, res = 0;
+	int error, res = 0, firstError = 0, firstRes = 1;
 	if((error = getaddrinfo(host.c_str(), port.c_str(), &aiHint, &addrs)))
 		throw ConnectionError("Could not resolve address: "+std::string(gai_strerror(error)));
 	for(addrinfo* addr = addrs; addr != nullptr; addr = addr->ai_next)
 	{
+		if(addr == addrs->ai_next)
+		{
+			firstError = error;
+			firstRes = res;
+		}
 		if((sock = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol))  == -1)
-			continue;
-		int flags = fcntl(sock, F_GETFL);
-		if(flags < 0)
 		{
 			error = errno;
 			res = -1;
 			continue;
 		}
+		int flags = fcntl(sock, F_GETFL);
+		if(flags < 0)
+		{
+			error = errno;
+			res = -1;
+			close();
+			continue;
+		}
 		fcntl(sock, F_SETFL, flags | O_NONBLOCK);
-		::connect(sock, addr->ai_addr, addr->ai_addrlen);
-		fd.fd = sock;
-		do {
-			res = poll(&fd, 1, 3000);
-		} while(res < 0 && errno == EINTR);
-		if(res == 1)
-			break;
+		if(::connect(sock, addr->ai_addr, addr->ai_addrlen) == 0 || errno == EINPROGRESS)
+		{
+			fd.fd = sock;
+			do {
+				res = poll(&fd, 1, 3000);
+			} while(res < 0 && errno == EINTR);
+		}
+		else
+			res = -1;
 		error = errno;
+		if(res == 1)
+		{
+			socklen_t len = sizeof(error);
+			getsockopt(sock, SOL_SOCKET, SO_ERROR, &error, &len);
+			if(error == 0)
+				break;
+			res = -1;
+		}
 		::close(sock);
 		sock = -1;
 	}
 	freeaddrinfo(addrs);
+	if(res <= 0 && firstRes <= 0)
+	{
+		error = firstError;
+		res = firstRes;
+	}
 	if(res == 0)
 		throw ConnectionError("Connect failed: connection timeout");
 	if(res < 0)
