@@ -51,6 +51,7 @@ std::string ExmdbProtocolError::description(uint8_t code)
 	case ResponseCode::PULL_ERROR: return "Invalid request/Server-side deserializing error";
 	case ResponseCode::DISPATCH_ERROR: return "Dispatch error";
 	case ResponseCode::PUSH_ERROR: return "Server-side serialize error";
+	case ResponseCode::SERVICE_UNAVAILABLE: return "Service currently unavailable";
 	default: return "Unknown error code "+std::to_string(code);
 	}
 }

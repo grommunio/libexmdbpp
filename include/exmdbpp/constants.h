@@ -17,6 +17,7 @@ static const uint8_t CONNECT_INCOMPLETE = 0x06;
 static const uint8_t PULL_ERROR = 0x07;
 static const uint8_t DISPATCH_ERROR = 0x08;
 static const uint8_t PUSH_ERROR = 0x09;
+static const uint8_t SERVICE_UNAVAILABLE = 0x10;
 }
 
 namespace CallId
