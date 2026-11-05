@@ -250,6 +250,8 @@ Response<ReadDelegatesRequest::callId>::Response(IOBuffer& buff)
 // Explicit template instantiations for requests
 
 template struct Request<constants::CallId::ALLOCATE_CN>;
+template struct Request<constants::CallId::AUTOREPLY_GETPROP, uint32_t, Collection<uint16_t, uint32_t>>;
+template struct Request<constants::CallId::AUTOREPLY_SETPROP, uint32_t, Collection<uint16_t, structures::TaggedPropval>>;
 template struct Request<constants::CallId::CREATE_FOLDER_BY_PROPERTIES, uint32_t, Collection<uint16_t, structures::TaggedPropval>>;
 template struct Request<constants::CallId::DELETE_FOLDER, uint32_t, uint64_t, bool>;
 template struct Request<constants::CallId::DELETE_MESSAGES, uint32_t, uint32_t, const std::string&, uint64_t, Collection<uint32_t, uint64_t>, bool>;

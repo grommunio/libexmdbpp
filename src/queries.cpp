@@ -493,6 +493,21 @@ ExmdbQueries::ProptagList ExmdbQueries::getAllStoreProperties(const std::string&
 {return send<GetAllStorePropertiesRequest>(homedir).proptags;}
 
 /**
+ * @brief      Get autoreply properties
+ *
+ * Unavailable properties are returned as PropvalType::ERROR.
+ *
+ * @param      homedir   Home directory path of the user
+ * @param      cpid      Code page ID, unused
+ * @param      proptags  Properties to get
+ *
+ * @return     List of properties
+ */
+ExmdbQueries::PropvalList ExmdbQueries::getAutoreplyProperties(const std::string& homedir, uint32_t cpid,
+                                                               const std::vector<uint32_t>& proptags)
+{return send<AutoreplyGetpropRequest>(homedir, cpid, proptags).propvals;}
+
+/**
  * @brief      Get send-as list
  *
  * @param      homedir   Home directory path of the domain
@@ -646,6 +661,22 @@ bool ExmdbQueries::resyncDevice(const std::string& homedir, const std::string& f
 				mids.emplace_back(tag.value.u64);
 	return !send<DeleteMessagesRequest>(homedir, userId, 0, "", deviceFolder.folderId, mids, true).partial;
 }
+
+/**
+ * @brief      Modify autoreply properties
+ *
+ * A property that cannot be stored ends the call with a dispatch error.
+ * Properties before it are kept.
+ *
+ * @param      homedir   Home directory path of the user
+ * @param      cpid      Code page ID, unused
+ * @param      propvals  PropertyValues to modify
+ *
+ * @return     List of problems encountered
+ */
+ExmdbQueries::ProblemList ExmdbQueries::setAutoreplyProperties(const std::string& homedir, uint32_t cpid,
+                                                               const std::vector<TaggedPropval>& propvals)
+{return send<AutoreplySetpropRequest>(homedir, cpid, propvals).problems;}
 
 /**
  * @brief      Set delegate list

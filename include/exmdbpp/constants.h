@@ -53,6 +53,8 @@ static const uint8_t READ_MESSAGE = 0x6f;
 static const uint8_t LOAD_PERMISSION_TABLE = 0x7d; //was 0x29, changed table_flags from uint8_t to uint32_t
 static const uint8_t UNLOAD_STORE = 0x80;
 static const uint8_t EMPTY_FOLDER = 0x84;
+static const uint8_t AUTOREPLY_GETPROP = 0x94;
+static const uint8_t AUTOREPLY_SETPROP = 0x95;
 static const uint8_t READ_DELEGATES = 0x96;
 static const uint8_t WRITE_DELEGATES = 0x97;
 }
@@ -1038,6 +1040,15 @@ static const uint32_t TESTLINESPEED = 0x662B0102;
 static const uint32_t PARENTDISPLAY = 0x0E05001F;
 static const uint32_t PARENTDISPLAY_STRING8 = 0x0E05001E;
 static const uint32_t CREATORSID = 0x0E580102;
+static const uint32_t ECOUTOFOFFICE = 0x67600003;
+static const uint32_t ECOUTOFOFFICEMSG = 0x6761001F;
+static const uint32_t ECOUTOFOFFICESUBJECT = 0x6762001F;
+static const uint32_t ECOUTOFOFFICEFROM = 0x67630040;
+static const uint32_t ECOUTOFOFFICEUNTIL = 0x67640040;
+static const uint32_t ECALLOWEXTERNAL = 0x6765000B;
+static const uint32_t ECEXTERNALAUDIENCE = 0x6766000B;
+static const uint32_t ECEXTERNALREPLY = 0x6767001F;
+static const uint32_t ECEXTERNALSUBJECT = 0x6768001F;
 }
 
 enum class DelegateMode : uint32_t {

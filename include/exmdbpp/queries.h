@@ -108,6 +108,7 @@ public:
 	PropvalTable findFolder(const std::string&, const std::string&, uint64_t=0, bool=true, uint32_t fuuz=0,
 	                        const std::vector<uint32_t>& = defaultFolderProps);
 	ProptagList getAllStoreProperties(const std::string&);
+	PropvalList getAutoreplyProperties(const std::string&, uint32_t, const std::vector<uint32_t>&);
 	[[deprecated]] PropvalTable getFolderList(const std::string&, const std::vector<uint32_t>& = defaultFolderProps, uint32_t=0, uint32_t=0);
 	PropvalTable getFolderMemberList(const std::string&, uint64_t);
 	ProptagList getAllFolderProperties(const std::string&, uint64_t);
@@ -123,6 +124,7 @@ public:
 	bool removeSyncStates(const std::string&, const std::string&);
 	std::vector<uint16_t> resolveNamedProperties(const std::string&, bool, const std::vector<structures::PropertyName>&);
 	bool resyncDevice(const std::string&, const std::string&, const std::string&, uint32_t);
+	ProblemList setAutoreplyProperties(const std::string&, uint32_t, const std::vector<structures::TaggedPropval>&);
 	void setDelegates(const std::string&, const UserList&);
 	uint32_t setFolderMember(const std::string&, uint64_t, const std::string&, uint32_t, PermissionMode=ADD);
 	uint32_t setFolderMember(const std::string&, uint64_t, uint64_t, uint32_t, PermissionMode=ADD);

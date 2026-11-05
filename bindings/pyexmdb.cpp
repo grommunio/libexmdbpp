@@ -351,6 +351,8 @@ PYBIND11_MODULE(pyexmdb, m)
 	         py::arg("proptags") = ExmdbQueries::defaultFolderProps)
 	    .def("getAllStoreProperties", &ExmdbQueries::getAllStoreProperties,  release_gil(),
 	         py::arg("homedir"))
+	    .def("getAutoreplyProperties", &ExmdbQueries::getAutoreplyProperties, release_gil(),
+	         py::arg("homedir"), py::arg("cpid"), py::arg("proptags"))
 	    .def("getFolderMemberList", &ExmdbQueries::getFolderMemberList, release_gil(),
 	         py::arg("homedir"), py::arg("folderId"))
 	    .def("getAllFolderProperties", &ExmdbQueries::getAllFolderProperties, release_gil(),
@@ -377,6 +379,8 @@ PYBIND11_MODULE(pyexmdb, m)
 	         py::arg("homedir"), py::arg("create"), py::arg("propnames"))
 	    .def("resyncDevice", &ExmdbQueries::resyncDevice, release_gil(),
 	         py::arg("homedir"), py::arg("folderName"), py::arg("deviceId"), py::arg("userId"))
+	    .def("setAutoreplyProperties", &ExmdbQueries::setAutoreplyProperties, release_gil(),
+	         py::arg("homedir"), py::arg("cpid"), py::arg("propvals"))
 	    .def("setDelegates", &ExmdbQueries::setDelegates, release_gil(), py::arg("homedir"), py::arg("users"))
 	    .def("setFolderMember",
 	         py::overload_cast<const std::string&, uint64_t, uint64_t, uint32_t, ExmdbQueries::PermissionMode>(&ExmdbQueries::setFolderMember),

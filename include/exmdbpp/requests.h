@@ -321,6 +321,50 @@ struct Response<AllocateCnRequest::callId>
 	uint64_t changeNum; ///< Newly allocated change number
 };
 
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief   Get autoreply properties request
+ *
+ * @param   string      homedir
+ * @param   uint32_t    cpid
+ * @param   uint32_t[]  proptags
+ *
+ * @return  PropvalResponse
+ */
+struct AutoreplyGetpropRequest : public Request<constants::CallId::AUTOREPLY_GETPROP,
+        uint32_t, Collection<uint16_t, uint32_t>>
+{};
+
+/**
+ * Response type override for get autoreply properties request (-> PropvalResponse)
+ */
+template<>
+struct response_map<AutoreplyGetpropRequest::callId>
+{using type = PropvalResponse;};
+
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief   Update autoreply properties
+ *
+ * @param   string          homedir
+ * @param   uint32_t        cpid
+ * @param   TaggedPropval[] propvals
+ *
+ * @return  ProblemsResponse
+ */
+struct AutoreplySetpropRequest : public Request<constants::CallId::AUTOREPLY_SETPROP,
+        uint32_t, Collection<uint16_t, structures::TaggedPropval>>
+{};
+
+/**
+ * Response type override for set autoreply properties request (-> ProblemsResponse)
+ */
+template<>
+struct response_map<AutoreplySetpropRequest::callId>
+{using type = ProblemsResponse;};
+
 
 //////////////////////////////////////////////////////////////////////////////
 /**
