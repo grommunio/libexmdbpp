@@ -34,6 +34,8 @@ class ExmdbClient
 		void send(IOBuffer&);
 
 	private:
+		void interrupted();
+
 		int sock = -1; ///< TCP socket to send and receive data
 	};
 
@@ -58,6 +60,7 @@ public:
 	requests::Response_t<Request> send(const Args&...);
 
 	static const uint8_t AUTO_RECONNECT;
+	static void (*interruptHook)();
 private:
 	Connection connection; ///< Connection used to send and receive data
 	ConnParm params; ///< Connection parameters

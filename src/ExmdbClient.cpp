@@ -27,6 +27,7 @@ using namespace constants;
 
 
 const uint8_t ExmdbClient::AUTO_RECONNECT = 1<<0; ///< Automatically reconnect after an error response
+void (*ExmdbClient::interruptHook)() = nullptr; ///< Called when a signal interrupts a request
 
 
 /**
@@ -194,6 +195,21 @@ void ExmdbClient::Connection::connect(const std::string& host, const std::string
 }
 
 /**
+ * @brief      Call the interrupt hook
+ */
+void ExmdbClient::Connection::interrupted()
+{
+	if(!interruptHook)
+		return;
+	try {interruptHook();}
+	catch (...)
+	{
+		close();
+		throw;
+	}
+}
+
+/**
  * @brief      Send request
  *
  * Sends data contained in the buffer to the server.
@@ -209,17 +225,18 @@ void ExmdbClient::Connection::send(IOBuffer& buff)
 	{
 		ssize_t bytes = ::send(sock, buff.data()+sent, buff.size()-sent, MSG_NOSIGNAL);
 		if(bytes < 0) {
-			if(errno == EINTR)
+			if(errno == EINTR) {
+				interrupted();
 				continue;
+			}
 			throw ConnectionError("Send failed: "+std::string(strerror(errno)));
 		}
 		sent += bytes;
 	}
 	buff.resize(5);
 	ssize_t bytes;
-	do {
-		bytes = recv(sock, buff.data(), 5, 0);
-	} while(bytes < 0 && errno == EINTR);
+	while((bytes = recv(sock, buff.data(), 5, 0)) < 0 && errno == EINTR)
+		interrupted();
 	if(bytes < 0)
 		throw ConnectionError("Receive failed: "+std::string(strerror(errno)));
 	else if(bytes == 0)
@@ -238,8 +255,10 @@ void ExmdbClient::Connection::send(IOBuffer& buff)
 	{
 		bytes = recv(sock, buff.data()+offset, length-offset, 0);
 		if(bytes < 0) {
-			if(errno == EINTR)
+			if(errno == EINTR) {
+				interrupted();
 				continue;
+			}
 			throw ConnectionError("Message reception failed");
 		}
 		if(bytes == 0)
@@ -304,7 +323,7 @@ bool ExmdbClient::reconnect()
 		connection = std::move(newconn);
 		return true;
 	}
-	catch (...)
+	catch (const ExmdbError&)
 	{return false;}
 }
 

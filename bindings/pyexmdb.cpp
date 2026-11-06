@@ -473,4 +473,10 @@ PYBIND11_MODULE(pyexmdb, m)
 			PyErr_SetObject(protocolError.ptr(), exc.ptr());
 		}
 	});
+	exmdbpp::ExmdbClient::interruptHook = []()
+	{
+		py::gil_scoped_acquire gil;
+		if(PyErr_CheckSignals() != 0)
+			throw py::error_already_set();
+	};
 }
