@@ -8,6 +8,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -184,6 +186,11 @@ void ExmdbClient::Connection::connect(const std::string& host, const std::string
 	if(res < 0)
 		throw ConnectionError("Connect failed: "+std::string(strerror(error)));
 	fcntl(sock, F_SETFL, fcntl(sock, F_GETFL) & ~O_NONBLOCK);
+	const int enable = 1, idle = 30, interval = 10, count = 3;
+	setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &enable, sizeof(enable));
+	setsockopt(sock, IPPROTO_TCP, TCP_KEEPIDLE, &idle, sizeof(idle));
+	setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL, &interval, sizeof(interval));
+	setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, &count, sizeof(count));
 }
 
 /**
