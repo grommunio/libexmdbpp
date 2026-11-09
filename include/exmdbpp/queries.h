@@ -104,7 +104,9 @@ public:
 	};
 
 	uint64_t createFolder(const std::string&, uint32_t, const std::string&, const std::string&, const std::string&, uint64_t=0);
+	uint32_t createStore(const std::string&);
 	bool deleteFolder(const std::string&, uint64_t, bool=false);
+	uint32_t deleteStore(const std::string&);
 	PropvalTable findFolder(const std::string&, const std::string&, uint64_t=0, bool=true, uint32_t fuuz=0,
 	                        const std::vector<uint32_t>& = defaultFolderProps);
 	ProptagList getAllStoreProperties(const std::string&);
@@ -115,6 +117,7 @@ public:
 	UserList getDelegates(const std::string&);
 	PropvalList getFolderProperties(const std::string&, uint32_t, uint64_t, const std::vector<uint32_t>& = defaultFolderProps);
 	UserList getSendAs(const std::string&);
+	std::string getServerVersion(const std::string&);
 	SyncData getSyncData(const std::string&, const std::string&);
 	PropvalList getStoreProperties(const std::string&, uint32_t, const std::vector<uint32_t>&);
 	PropvalTable listFolders(const std::string&, uint64_t, bool=false, const std::vector<uint32_t>& = defaultFolderProps,

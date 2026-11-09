@@ -518,6 +518,31 @@ ExmdbQueries::UserList ExmdbQueries::getSendAs(const std::string& homedir)
 {return send<ReadDelegatesRequest>(homedir, DelegateMode::SENDAS).userlist;}
 
 /**
+ * @brief      Get version of the exmdb server
+ *
+ * @param      homedir   Home directory path of the user or domain
+ *
+ * @return     Version string, empty if the server does not report it
+ */
+std::string ExmdbQueries::getServerVersion(const std::string& homedir)
+{
+	const uint32_t proptags[] = {PropTag::ECSERVERVERSION};
+	try
+	{
+		auto response = send<AutoreplyGetpropRequest>(homedir, 0, proptags);
+		for(const TaggedPropval& tp : response.propvals)
+			if(tp.tag == PropTag::ECSERVERVERSION)
+				return tp.value.str;
+	}
+	catch (const ExmdbProtocolError& err)
+	{
+		if(err.code != ResponseCode::PULL_ERROR)
+			throw;
+	}
+	return std::string();
+}
+
+/**
  * @brief      Remove store properties
  *
  * @param      homedir   Home directory path of the domain
@@ -696,5 +721,40 @@ void ExmdbQueries::setDelegates(const std::string& homedir, const UserList& user
  */
 void ExmdbQueries::setSendAs(const std::string& homedir, const UserList& users)
 {send<WriteDelegatesRequest>(homedir, DelegateMode::SENDAS, users);}
+
+template<class Request>
+static uint32_t storeRequest(ExmdbQueries& client, const std::string& homedir)
+{
+	if(client.getServerVersion(homedir).empty())
+		return ErrorCode::NOT_SUPPORTED;
+	try
+	{return client.send<Request>(homedir).result;}
+	catch (const ExmdbProtocolError& err)
+	{
+		if(err.code == ResponseCode::PULL_ERROR)
+			return ErrorCode::NOT_SUPPORTED;
+		throw;
+	}
+}
+
+/**
+ * @brief      Create the store of a user or domain
+ *
+ * @param      homedir   Home directory path of the user or domain
+ *
+ * @return     ErrorCode value, NOT_SUPPORTED if the server does not know the request
+ */
+uint32_t ExmdbQueries::createStore(const std::string& homedir)
+{return storeRequest<CreateStoreRequest>(*this, homedir);}
+
+/**
+ * @brief      Delete the store of a user or domain
+ *
+ * @param      homedir   Home directory path of the user or domain
+ *
+ * @return     ErrorCode value, NOT_SUPPORTED if the server does not know the request
+ */
+uint32_t ExmdbQueries::deleteStore(const std::string& homedir)
+{return storeRequest<DeleteStoreRequest>(*this, homedir);}
 
 }

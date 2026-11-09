@@ -20,6 +20,20 @@ static const uint8_t PUSH_ERROR = 0x09;
 static const uint8_t SERVICE_UNAVAILABLE = 0x10;
 }
 
+namespace ErrorCode
+{
+static const uint32_t SUCCESS = 0x00000000;
+static const uint32_t WARN_WITH_ERRORS = 0x00040380;
+static const uint32_t ERROR = 0x80004005;
+static const uint32_t STORAGE_ACCESS_DENIED = 0x80030005;
+static const uint32_t NOT_SUPPORTED = 0x80040102;
+static const uint32_t BUSY = 0x8004010B;
+static const uint32_t NOT_FOUND = 0x8004010F;
+static const uint32_t DUPLICATE_NAME = 0x80040604;
+static const uint32_t ACCESS_DENIED = 0x80070005;
+static const uint32_t INVALID_PARAM = 0x80070057;
+}
+
 namespace CallId
 {
 static const uint8_t CONNECT = 0x00;
@@ -57,6 +71,8 @@ static const uint8_t AUTOREPLY_GETPROP = 0x94;
 static const uint8_t AUTOREPLY_SETPROP = 0x95;
 static const uint8_t READ_DELEGATES = 0x96;
 static const uint8_t WRITE_DELEGATES = 0x97;
+static const uint8_t CREATE_STORE = 0x99;
+static const uint8_t DELETE_STORE = 0x9a;
 }
 
 namespace PublicFid
@@ -1040,6 +1056,7 @@ static const uint32_t TESTLINESPEED = 0x662B0102;
 static const uint32_t PARENTDISPLAY = 0x0E05001F;
 static const uint32_t PARENTDISPLAY_STRING8 = 0x0E05001E;
 static const uint32_t CREATORSID = 0x0E580102;
+static const uint32_t ECSERVERVERSION = 0x6716001F;
 static const uint32_t ECOUTOFOFFICE = 0x67600003;
 static const uint32_t ECOUTOFOFFICEMSG = 0x6761001F;
 static const uint32_t ECOUTOFOFFICESUBJECT = 0x6762001F;

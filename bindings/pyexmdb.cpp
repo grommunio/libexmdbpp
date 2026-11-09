@@ -339,13 +339,25 @@ PYBIND11_MODULE(pyexmdb, m)
 	exmdbQueries.def_readonly_static("defaultFolderProps", &ExmdbQueries::defaultFolderProps)
 	    .def_readonly_static("ownerRights", &ExmdbQueries::ownerRights)
 	    .def_readonly_static("AUTO_RECONNECT", &ExmdbQueries::AUTO_RECONNECT)
+	    .def_readonly_static("EC_SUCCESS", &ErrorCode::SUCCESS)
+	    .def_readonly_static("EC_WARN_WITH_ERRORS", &ErrorCode::WARN_WITH_ERRORS)
+	    .def_readonly_static("EC_ERROR", &ErrorCode::ERROR)
+	    .def_readonly_static("EC_STORAGE_ACCESS_DENIED", &ErrorCode::STORAGE_ACCESS_DENIED)
+	    .def_readonly_static("EC_NOT_SUPPORTED", &ErrorCode::NOT_SUPPORTED)
+	    .def_readonly_static("EC_BUSY", &ErrorCode::BUSY)
+	    .def_readonly_static("EC_NOT_FOUND", &ErrorCode::NOT_FOUND)
+	    .def_readonly_static("EC_DUPLICATE_NAME", &ErrorCode::DUPLICATE_NAME)
+	    .def_readonly_static("EC_ACCESS_DENIED", &ErrorCode::ACCESS_DENIED)
+	    .def_readonly_static("EC_INVALID_PARAM", &ErrorCode::INVALID_PARAM)
 	    .def(py::init<const std::string&, const std::string&, const std::string&, bool, uint8_t>(), release_gil(),
 	         py::arg("host"), py::arg("port"), py::arg("homedir"), py::arg("isPrivate"), py::arg("flags")=0)
 	    .def("createFolder", &ExmdbQueries::createFolder, release_gil(),
 	         py::arg("homedir"), py::arg("domainId"), py::arg("folderName"), py::arg("container"), py::arg("comment"),
 	         py::arg("parentId")=0)
+	    .def("createStore", &ExmdbQueries::createStore, release_gil(), py::arg("homedir"))
 	    .def("deleteFolder", &ExmdbQueries::deleteFolder, release_gil(),
 	        py::arg("homedir"), py::arg("folderId"), py::arg("clear")=false)
+	    .def("deleteStore", &ExmdbQueries::deleteStore, release_gil(), py::arg("homedir"))
 	    .def("findFolder", &ExmdbQueries::findFolder, release_gil(),
 	         py::arg("homedir"), py::arg("name"), py::arg("folderId")=0, py::arg("recursive")=true, py::arg("fuzzyLevel")=0,
 	         py::arg("proptags") = ExmdbQueries::defaultFolderProps)
@@ -365,6 +377,7 @@ PYBIND11_MODULE(pyexmdb, m)
 	         py::arg("homedir"), py::arg("folderName"))
 	    .def("getDelegates", &ExmdbQueries::getDelegates, release_gil(), py::arg("homedir"))
 	    .def("getSendAs", &ExmdbQueries::getSendAs, release_gil(), py::arg("homedir"))
+	    .def("getServerVersion", &ExmdbQueries::getServerVersion, release_gil(), py::arg("homedir"))
 	    .def("listFolders", &ExmdbQueries::listFolders, release_gil(),
 	         py::arg("homedir"), py::arg("folderId"), py::arg("recursive")=false,
 	         py::arg("proptags") = ExmdbQueries::defaultFolderProps, py::arg("offset")=0, py::arg("limit")=0,

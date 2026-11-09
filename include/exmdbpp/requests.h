@@ -267,6 +267,17 @@ struct PropvalResponse
 };
 
 /**
+ * @brief      Generic response for requests returning a result code
+ */
+struct ResultResponse
+{
+	ResultResponse() = default;
+	explicit ResultResponse(IOBuffer&);
+
+	uint32_t result; ///< ErrorCode of the operation
+};
+
+/**
  * @brief      Generic response for requests returning only success status
  */
 struct SuccessResponse
@@ -408,6 +419,25 @@ struct response_map<CreateFolderByPropertiesRequest::callId>
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
+ * @brief   Create store of a user or domain
+ *
+ * @param   string  homedir
+ *
+ * @return  ResultResponse
+ */
+struct CreateStoreRequest : public Request<constants::CallId::CREATE_STORE>
+{};
+
+/**
+ * Response type override for create store request (-> ResultResponse)
+ */
+template<>
+struct response_map<CreateStoreRequest::callId>
+{using type = ResultResponse;};
+
+///////////////////////////////////////////////////////////////////////////////
+
+/**
  * @brief   Delete folder
  *
  * @param   string      homedir
@@ -456,6 +486,25 @@ struct Response<DeleteMessagesRequest::callId>
 
 	bool partial; ///< Whether deletion was incomplete
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief   Delete store of a user or domain
+ *
+ * @param   string  homedir
+ *
+ * @return  ResultResponse
+ */
+struct DeleteStoreRequest : public Request<constants::CallId::DELETE_STORE>
+{};
+
+/**
+ * Response type override for delete store request (-> ResultResponse)
+ */
+template<>
+struct response_map<DeleteStoreRequest::callId>
+{using type = ResultResponse;};
 
 ///////////////////////////////////////////////////////////////////////////////
 
